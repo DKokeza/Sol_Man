@@ -17,6 +17,7 @@ class Game {
             this.processingCollision = false;
             this.bitcoinPoints = 50;
 
+            console.log('Starting game initialization...');
             this.initializeLevel();
             this.audioManager = new AudioManager();
             this.loadHighScores();
@@ -28,7 +29,7 @@ class Game {
             console.log('Game initialized successfully');
         } catch (error) {
             console.error('Error initializing game:', error);
-            document.body.innerHTML = '<div class="error">Failed to initialize game. Please refresh the page.</div>';
+            this.handleGameError(error);
         }
     }
 
@@ -76,15 +77,14 @@ class Game {
     bindControls() {
         document.addEventListener('keydown', (e) => {
             try {
-                // Check if it's the first arrow key press
                 if (!this.gameActive && 
                     (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
                      e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-                    console.log('First arrow key pressed, starting game');
-                    // Hide instructions and start game
+                    console.log('First key press detected, starting game');
                     document.getElementById('instructions').classList.add('hidden');
                     this.gameActive = true;
                     this.gameLoop();
+                    return;
                 }
 
                 if (!this.gameActive) return;
@@ -93,7 +93,6 @@ class Game {
                     this.audioManager.initAudioContext();
                 }
 
-                // Log direction changes
                 let newDirection = null;
                 switch(e.key) {
                     case 'ArrowLeft':
@@ -111,12 +110,12 @@ class Game {
                 }
 
                 if (newDirection) {
-                    console.log(`Direction changed to: (${newDirection.x}, ${newDirection.y})`);
+                    console.log(`Direction input: ${e.key}`);
                     this.player.setDirection(newDirection);
                 }
             } catch (error) {
                 console.error('Error in control binding:', error);
-                this.handleGameError();
+                this.handleGameError(error);
             }
         });
     }
@@ -158,108 +157,123 @@ class Game {
     update() {
         if (!this.gameActive) return;
 
-        // Try to change direction if there's a pending direction change
-        this.player.tryChangeDirection(this.maze);
+        try {
+            // Try to change direction if there's a pending direction change
+            this.player.tryChangeDirection(this.maze);
 
-        const nextPos = {
-            x: this.player.x + this.player.direction.x * this.player.speed,
-            y: this.player.y + this.player.direction.y * this.player.speed
-        };
+            const nextPos = {
+                x: this.player.x + this.player.direction.x * this.player.speed,
+                y: this.player.y + this.player.direction.y * this.player.speed
+            };
 
-        const gridPos = {
-            x: Math.floor(nextPos.x / this.tileSize),
-            y: Math.floor(nextPos.y / this.tileSize)
-        };
+            const gridPos = {
+                x: Math.floor(nextPos.x / this.tileSize),
+                y: Math.floor(nextPos.y / this.tileSize)
+            };
 
-        if (!this.maze.isWall(gridPos.x, gridPos.y)) {
-            this.player.update();
-        }
-
-        if (this.maze.removeDot(gridPos.x, gridPos.y)) {
-            this.score += 10;
-            if (this.audioManager) {
-                this.audioManager.play('chomp');
+            if (!this.maze.isWall(gridPos.x, gridPos.y)) {
+                this.player.update();
+                console.log(`Player position updated: (${this.player.x}, ${this.player.y})`);
             }
-            document.getElementById('score').textContent = this.score;
-        }
 
-        if (this.maze.removeBitcoin(gridPos.x, gridPos.y)) {
-            this.score += this.bitcoinPoints;
-            if (this.audioManager) {
-                this.audioManager.play('chomp');
-                setTimeout(() => this.audioManager.play('chomp'), 100);
-            }
-            document.getElementById('score').textContent = this.score;
+            // Update ghosts and check collisions
+            if (!this.isInvulnerable && !this.processingCollision) {
+                for (const ghost of this.ghosts) {
+                    ghost.update(gridPos, this.maze);
 
-            // Try to send SOL reward if wallet is connected
-            if (window.walletManager) {
-                try {
-                    window.walletManager.sendReward(0.01).then(success => {
-                        if (success) {
-                            console.log('SOL reward sent successfully');
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error sending SOL reward:', error);
+                    const distance = Math.sqrt(
+                        Math.pow(this.player.x - (ghost.x + this.tileSize/2), 2) +
+                        Math.pow(this.player.y - (ghost.y + this.tileSize/2), 2)
+                    );
+
+                    if (distance < this.tileSize) {
+                        console.log('Ghost collision detected');
+                        this.handleCollision();
+                        break;
+                    }
                 }
             }
-        }
 
-        if (!this.isInvulnerable && !this.processingCollision) {
-            for (const ghost of this.ghosts) {
-                ghost.update(gridPos, this.maze);
-
-                const distance = Math.sqrt(
-                    Math.pow(this.player.x - (ghost.x + this.tileSize/2), 2) +
-                    Math.pow(this.player.y - (ghost.y + this.tileSize/2), 2)
-                );
-
-                if (distance < this.tileSize) {
-                    this.handleCollision();
-                    break;
+            // Handle dot collection
+            if (this.maze.removeDot(gridPos.x, gridPos.y)) {
+                this.score += 10;
+                if (this.audioManager) {
+                    this.audioManager.play('chomp');
                 }
+                document.getElementById('score').textContent = this.score;
             }
-        }
 
-        // Check if level is complete
-        if (this.maze.dots.length === 0 && this.maze.bitcoins.length === 0) {
-            this.nextLevel();
+            // Handle bitcoin collection
+            if (this.maze.removeBitcoin(gridPos.x, gridPos.y)) {
+                this.score += this.bitcoinPoints;
+                if (this.audioManager) {
+                    this.audioManager.play('chomp');
+                }
+                document.getElementById('score').textContent = this.score;
+            }
+
+            // Check level completion
+            if (this.maze.dots.length === 0 && this.maze.bitcoins.length === 0) {
+                console.log('Level complete, advancing to next level');
+                this.nextLevel();
+            }
+
+        } catch (error) {
+            console.error('Error in game update:', error);
+            this.handleGameError(error);
         }
     }
 
     handleCollision() {
         if (this.processingCollision) return;
 
-        this.processingCollision = true;
-        this.lives--;
-        document.getElementById('lives').textContent = this.lives;
+        try {
+            this.processingCollision = true;
+            this.lives--;
+            document.getElementById('lives').textContent = this.lives;
 
-        if (this.audioManager) {
-            this.audioManager.play('death');
-        }
+            if (this.audioManager) {
+                this.audioManager.play('death');
+            }
 
-        if (this.lives <= 0) {
-            this.gameActive = false;
-            this.gameOver();
-        } else {
-            this.resetPositions();
-            this.isInvulnerable = true;
-            setTimeout(() => {
-                this.isInvulnerable = false;
-                this.processingCollision = false;
-            }, this.invulnerabilityDuration);
+            if (this.lives <= 0) {
+                console.log('Game over - no lives remaining');
+                this.gameActive = false;
+                this.gameOver();
+            } else {
+                console.log('Collision detected - resetting positions');
+                this.resetPositions();
+                this.isInvulnerable = true;
+                setTimeout(() => {
+                    this.isInvulnerable = false;
+                    this.processingCollision = false;
+                }, this.invulnerabilityDuration);
+            }
+        } catch (error) {
+            console.error('Error handling collision:', error);
+            this.handleGameError(error);
         }
     }
 
     resetPositions() {
-        this.player.setDirection({ x: 0, y: 0 });
-        this.player.x = 10 * this.tileSize;
-        this.player.y = 15 * this.tileSize;
+        try {
+            this.player.x = 10 * this.tileSize;
+            this.player.y = 15 * this.tileSize;
+            this.player.direction = { x: 0, y: 0 };
+            this.player.nextDirection = null;
 
-        this.ghosts.forEach((ghost, index) => {
-            ghost.x = (9 + index) * this.tileSize;
-            ghost.y = 9 * this.tileSize;
-        });
+            this.ghosts.forEach((ghost, index) => {
+                ghost.x = (9 + index) * this.tileSize;
+                ghost.y = 9 * this.tileSize;
+                ghost.direction = { x: 0, y: 0 };
+                ghost.targetTile = null;
+            });
+
+            console.log('Positions reset successfully');
+        } catch (error) {
+            console.error('Error resetting positions:', error);
+            this.handleGameError(error);
+        }
     }
 
     draw() {
@@ -276,30 +290,24 @@ class Game {
     }
 
     gameLoop() {
+        if (!this.gameActive) return;
+
         try {
-            if (this.gameActive) {
+            requestAnimationFrame(() => {
                 try {
                     this.update();
-                } catch (updateError) {
-                    console.error('Error in game update:', updateError);
-                    throw updateError;
-                }
-
-                try {
                     this.draw();
-                } catch (drawError) {
-                    console.error('Error in game draw:', drawError);
-                    throw drawError;
-                }
 
-                // Continue the game loop
-                if (this.gameActive) {
-                    requestAnimationFrame(() => this.gameLoop());
+                    if (this.gameActive) {
+                        this.gameLoop();
+                    }
+                } catch (error) {
+                    console.error('Error in game loop iteration:', error);
+                    this.handleGameError(error);
                 }
-            }
+            });
         } catch (error) {
             console.error('Critical error in game loop:', error);
-            this.gameActive = false;
             this.handleGameError(error);
         }
     }
@@ -316,6 +324,10 @@ class Game {
                 ghostsCount: this.ghosts ? this.ghosts.length : 0
             }
         });
+
+        // Reset game state
+        this.gameActive = false;
+        this.processingCollision = false;
 
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error';
