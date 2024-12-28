@@ -10,8 +10,10 @@ class Game {
         this.score = 0;
         this.lives = 3;
         this.isInvulnerable = false;
-        this.invulnerabilityDuration = 2000; 
+        this.invulnerabilityDuration = 2000;
         this.bitcoinPoints = 50;
+        this.gameActive = true;
+        this.processingCollision = false;
 
         this.maze = new Maze(20, 20, this.tileSize);
         this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
@@ -30,6 +32,8 @@ class Game {
 
     bindControls() {
         document.addEventListener('keydown', (e) => {
+            if (!this.gameActive) return;
+
             if (this.audioManager) {
                 this.audioManager.initAudioContext();
             }
@@ -53,13 +57,26 @@ class Game {
 
     loadHighScores() {
         fetch('/api/scores')
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(scores => this.updateLeaderboard(scores))
-            .catch(error => console.error('Error loading high scores:', error));
+            .catch(error => {
+                console.error('Error loading high scores:', error);
+                const leaderboard = document.getElementById('highScores');
+                leaderboard.innerHTML = '<p>Unable to load scores. Please try again later.</p>';
+            });
     }
 
     updateLeaderboard(scores) {
         const leaderboard = document.getElementById('highScores');
+        if (!scores || !Array.isArray(scores)) {
+            leaderboard.innerHTML = '<p>No scores available</p>';
+            return;
+        }
         leaderboard.innerHTML = scores.map((score, index) => `
             <div class="score-entry">
                 <span>${index + 1}. ${score.name}</span>
@@ -69,6 +86,8 @@ class Game {
     }
 
     update() {
+        if (!this.gameActive) return;
+
         const nextPos = {
             x: this.player.x + this.player.direction.x * this.player.speed,
             y: this.player.y + this.player.direction.y * this.player.speed
@@ -100,7 +119,7 @@ class Game {
             document.getElementById('score').textContent = this.score;
         }
 
-        if (!this.isInvulnerable) {
+        if (!this.isInvulnerable && !this.processingCollision) {
             for (const ghost of this.ghosts) {
                 ghost.update(gridPos, this.maze);
 
@@ -122,6 +141,9 @@ class Game {
     }
 
     handleCollision() {
+        if (this.processingCollision) return;
+
+        this.processingCollision = true;
         this.lives--;
         document.getElementById('lives').textContent = this.lives;
 
@@ -130,14 +152,27 @@ class Game {
         }
 
         if (this.lives <= 0) {
+            this.gameActive = false;
             this.gameOver();
         } else {
             this.resetPositions();
             this.isInvulnerable = true;
             setTimeout(() => {
                 this.isInvulnerable = false;
+                this.processingCollision = false;
             }, this.invulnerabilityDuration);
         }
+    }
+
+    resetPositions() {
+        this.player.setDirection({ x: 0, y: 0 });
+        this.player.x = 10 * this.tileSize;
+        this.player.y = 15 * this.tileSize;
+
+        this.ghosts.forEach((ghost, index) => {
+            ghost.x = (9 + index) * this.tileSize;
+            ghost.y = 9 * this.tileSize;
+        });
     }
 
     draw() {
@@ -159,25 +194,13 @@ class Game {
         requestAnimationFrame(() => this.gameLoop());
     }
 
-    resetPositions() {
-        this.player.setDirection({ x: 0, y: 0 });
-        this.player.x = 10 * this.tileSize;
-        this.player.y = 15 * this.tileSize;
-
-        this.ghosts.forEach((ghost, index) => {
-            ghost.x = (9 + index) * this.tileSize;
-            ghost.y = 9 * this.tileSize;
-        });
-    }
-
     gameOver(won = false) {
+        this.gameActive = false;
         document.getElementById('gameOver').classList.remove('hidden');
         document.getElementById('finalScore').textContent = this.score;
-        this.loadHighScores(); 
     }
 }
 
-// Functions for handling score submission
 async function submitScore() {
     const playerName = document.getElementById('playerName').value.trim();
     if (!playerName) {
@@ -199,11 +222,16 @@ async function submitScore() {
             })
         });
 
-        if (response.ok) {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.status === 'success') {
             document.getElementById('scoreSubmission').innerHTML = '<p>Score submitted successfully!</p>';
             window.game.loadHighScores();
         } else {
-            throw new Error('Failed to submit score');
+            throw new Error(result.message || 'Failed to submit score');
         }
     } catch (error) {
         console.error('Error submitting score:', error);
