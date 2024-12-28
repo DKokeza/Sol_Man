@@ -248,6 +248,10 @@ class Game {
         for (const ghost of this.ghosts) {
             ghost.makeVulnerable(vulnerabilityDuration);
         }
+        // Play power pellet sound
+        if (this.audioManager) {
+            this.audioManager.play('powerPellet');
+        }
     }
 
     eatGhost(ghost) {
@@ -255,13 +259,14 @@ class Game {
         ghost.resetToLastValidPosition();
         ghost.resetVulnerability();
 
-        // Award points (ghosts are worth more points each time during the same power pellet duration)
+        // Award points
         const ghostPoints = 200;
         this.score += ghostPoints;
         document.getElementById('score').textContent = this.score;
 
+        // Play ghost eaten sound
         if (this.audioManager) {
-            this.audioManager.play('chomp');
+            this.audioManager.play('ghostEaten');
         }
     }
 

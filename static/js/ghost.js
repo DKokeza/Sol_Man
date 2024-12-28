@@ -10,25 +10,19 @@ class Ghost {
         this.speed = speed;
         this.originalSpeed = speed;
         this.direction = { x: 0, y: 0 };
-        this.isMoving = false;
-        this.targetX = this.x;
-        this.targetY = this.y;
         this.isVulnerable = false;
-        this.isReturning = false;
-        this.blinkStart = 0;
         this.vulnerableTimer = null;
 
-        console.log(`Ghost ${color} initialized at grid (${x}, ${y}), pixel (${this.x}, ${this.y})`);
+        // Initialize with random direction
         this.randomizeDirection();
+        console.log(`Ghost ${color} initialized at (${x}, ${y})`);
     }
 
     makeVulnerable(duration) {
         this.isVulnerable = true;
-        this.color = '#2121ff'; // Blue color for vulnerable state
-        this.speed = this.originalSpeed * 0.5; // Slow down when vulnerable
-        this.blinkStart = Date.now() + (duration - 2000); // Start blinking 2 seconds before end
+        this.color = '#2121ff';
+        this.speed = this.originalSpeed * 0.5;
 
-        // Clear existing timer if any
         if (this.vulnerableTimer) {
             clearTimeout(this.vulnerableTimer);
         }
@@ -42,7 +36,6 @@ class Ghost {
         this.isVulnerable = false;
         this.color = this.originalColor;
         this.speed = this.originalSpeed;
-        this.blinkStart = 0;
         if (this.vulnerableTimer) {
             clearTimeout(this.vulnerableTimer);
             this.vulnerableTimer = null;
@@ -50,51 +43,49 @@ class Ghost {
     }
 
     update(playerPos, maze) {
-        try {
-            // If not currently moving, decide on next move
-            if (!this.isMoving) {
-                this.decideNextMove(maze);
-                return;
-            }
+        // Move in current direction
+        const nextX = this.x + (this.direction.x * this.speed);
+        const nextY = this.y + (this.direction.y * this.speed);
 
-            // Move towards target position
-            const dx = this.targetX - this.x;
-            const dy = this.targetY - this.y;
-            const distance = Math.sqrt(dx * dx + dy * dy);
+        // Calculate next grid position
+        const nextGridX = Math.floor(nextX / this.tileSize);
+        const nextGridY = Math.floor(nextY / this.tileSize);
 
-            if (distance < this.speed) {
-                // Reached target, snap to grid
-                this.x = this.targetX;
-                this.y = this.targetY;
-                this.gridX = Math.round(this.x / this.tileSize);
-                this.gridY = Math.round(this.y / this.tileSize);
-                this.isMoving = false;
-            } else {
-                // Continue moving towards target
-                this.x += (dx / distance) * this.speed;
-                this.y += (dy / distance) * this.speed;
-            }
-
-        } catch (error) {
-            console.error(`Ghost ${this.color} update error:`, error);
-            this.resetToLastValidPosition();
+        // Check if we hit a wall or reached a grid intersection
+        if (maze.isWall(nextGridX, nextGridY) || 
+            (this.isAtGridCenter() && Math.random() < 0.3)) {
+            this.randomizeDirection();
+            return;
         }
+
+        // Update position
+        this.x = nextX;
+        this.y = nextY;
+        this.gridX = Math.floor(this.x / this.tileSize);
+        this.gridY = Math.floor(this.y / this.tileSize);
+    }
+
+    isAtGridCenter() {
+        const centerX = this.gridX * this.tileSize + (this.tileSize / 2);
+        const centerY = this.gridY * this.tileSize + (this.tileSize / 2);
+        const tolerance = 2;
+
+        return Math.abs(this.x - centerX) < tolerance && 
+               Math.abs(this.y - centerY) < tolerance;
     }
 
     draw(ctx) {
         try {
             // Handle vulnerable state visuals
             if (this.isVulnerable) {
-                const timeLeft = this.vulnerableTimer?._idleStart + this.vulnerableTimer?._idleTimeout - Date.now();
-                if (timeLeft < 2000 && timeLeft > 0) {
-                    // Blink when vulnerability is about to end
+                if (this.vulnerableTimer && 
+                    this.vulnerableTimer._idleTimeout - (Date.now() - this.vulnerableTimer._idleStart) < 2000) {
                     this.color = Math.floor(Date.now() / 250) % 2 === 0 ? '#2121ff' : '#ffffff';
                 }
             }
 
+            // Draw ghost body
             ctx.fillStyle = this.color;
-
-            // Ghost body
             ctx.beginPath();
             ctx.arc(
                 this.x + this.tileSize / 2,
@@ -108,7 +99,7 @@ class Ghost {
             ctx.closePath();
             ctx.fill();
 
-            // Eyes (white when normal, blue when vulnerable)
+            // Draw eyes
             const eyeColor = this.isVulnerable ? this.color : 'white';
             ctx.fillStyle = eyeColor;
             ctx.beginPath();
@@ -127,79 +118,9 @@ class Ghost {
                 Math.PI * 2
             );
             ctx.fill();
-
         } catch (error) {
             console.error(`Ghost ${this.color} drawing error:`, error);
         }
-    }
-
-    decideNextMove(maze) {
-        try {
-            const possibleDirections = this.getValidDirections(maze);
-            if (possibleDirections.length === 0) {
-                console.warn(`Ghost ${this.color} has no valid moves at (${this.gridX}, ${this.gridY})`);
-                return;
-            }
-
-            // Choose random direction excluding current direction if possible
-            let availableDirections = possibleDirections.filter(dir =>
-                !(dir.x === -this.direction.x && dir.y === -this.direction.y)
-            );
-
-            if (availableDirections.length === 0) {
-                availableDirections = possibleDirections;
-            }
-
-            const newDirection = availableDirections[Math.floor(Math.random() * availableDirections.length)];
-            this.direction = newDirection;
-
-            // Set new target position
-            const targetGridX = this.gridX + newDirection.x;
-            const targetGridY = this.gridY + newDirection.y;
-
-            if (this.isValidPosition(maze, targetGridX, targetGridY)) {
-                this.targetX = targetGridX * this.tileSize;
-                this.targetY = targetGridY * this.tileSize;
-                this.isMoving = true;
-            }
-
-        } catch (error) {
-            console.error(`Ghost ${this.color} movement decision error:`, error);
-            this.resetToLastValidPosition();
-        }
-    }
-
-    getValidDirections(maze) {
-        const directions = [
-            { x: 1, y: 0 },
-            { x: -1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 0, y: -1 }
-        ];
-
-        return directions.filter(dir => 
-            this.isValidPosition(maze, this.gridX + dir.x, this.gridY + dir.y)
-        );
-    }
-
-    isValidPosition(maze, gridX, gridY) {
-        try {
-            if (gridX < 0 || gridY < 0 || gridX >= maze.width || gridY >= maze.height) {
-                return false;
-            }
-            return !maze.isWall(gridX, gridY);
-        } catch (error) {
-            console.error(`Ghost ${this.color} position validation error:`, error);
-            return false;
-        }
-    }
-
-    resetToLastValidPosition() {
-        this.x = this.gridX * this.tileSize;
-        this.y = this.gridY * this.tileSize;
-        this.isMoving = false;
-        this.direction = { x: 0, y: 0 };
-        console.log(`Ghost ${this.color} reset to last valid position (${this.gridX}, ${this.gridY})`);
     }
 
     randomizeDirection() {
@@ -209,6 +130,23 @@ class Ghost {
             { x: 0, y: 1 },
             { x: 0, y: -1 }
         ];
-        this.direction = directions[Math.floor(Math.random() * directions.length)];
+
+        // Don't pick the opposite of current direction if possible
+        let availableDirections = directions.filter(dir => 
+            !(dir.x === -this.direction.x && dir.y === -this.direction.y)
+        );
+
+        if (availableDirections.length === 0) {
+            availableDirections = directions;
+        }
+
+        this.direction = availableDirections[Math.floor(Math.random() * availableDirections.length)];
+    }
+
+    resetToLastValidPosition() {
+        // Ensure ghost is at grid center when resetting
+        this.x = this.gridX * this.tileSize;
+        this.y = this.gridY * this.tileSize;
+        this.randomizeDirection();
     }
 }
