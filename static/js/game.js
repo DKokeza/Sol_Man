@@ -19,6 +19,7 @@ class Game {
             new Ghost(10, 8, this.tileSize, 'orange')
         ];
 
+        this.audioManager = new AudioManager();
         this.bindControls();
         this.gameLoop();
     }
@@ -61,7 +62,13 @@ class Game {
         // Check for dot collection
         if (this.maze.removeDot(gridPos.x, gridPos.y)) {
             this.score += 10;
-            this.audioManager.play('chomp');
+            if (this.audioManager) {
+                try {
+                    this.audioManager.play('chomp');
+                } catch (e) {
+                    console.log('Audio play error:', e);
+                }
+            }
             document.getElementById('score').textContent = this.score;
         }
 
@@ -77,7 +84,13 @@ class Game {
             if (distance < this.tileSize) {
                 this.lives--;
                 document.getElementById('lives').textContent = this.lives;
-                this.audioManager.play('death');
+                if (this.audioManager) {
+                    try {
+                        this.audioManager.play('death');
+                    } catch (e) {
+                        console.log('Audio play error:', e);
+                    }
+                }
 
                 if (this.lives <= 0) {
                     this.gameOver();
