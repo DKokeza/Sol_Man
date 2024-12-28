@@ -7,34 +7,88 @@ class Ghost {
         this.direction = { x: 0, y: 0 };
         this.speed = speed;
         this.mode = 'chase';
+        this.stuckTimer = 0;
+        this.lastPosition = { x: x * tileSize, y: y * tileSize };
     }
 
     update(playerPos, maze) {
         const currentTile = this.getGridPosition();
 
-        if (this.mode === 'chase') {
-            const possibleMoves = this.getPossibleMoves(maze);
-            let bestMove = { x: 0, y: 0 };
-            let shortestDistance = Infinity;
-
-            for (const move of possibleMoves) {
-                const distance = Math.sqrt(
-                    Math.pow(currentTile.x + move.x - playerPos.x, 2) +
-                    Math.pow(currentTile.y + move.y - playerPos.y, 2)
-                );
-
-                if (distance < shortestDistance) {
-                    shortestDistance = distance;
-                    bestMove = move;
-                }
+        // Check if ghost is stuck
+        const currentPosition = { x: this.x, y: this.y };
+        if (Math.abs(currentPosition.x - this.lastPosition.x) < 0.1 &&
+            Math.abs(currentPosition.y - this.lastPosition.y) < 0.1) {
+            this.stuckTimer++;
+            if (this.stuckTimer > 60) { // If stuck for 60 frames (about 1 second)
+                this.unstuck(maze);
+                this.stuckTimer = 0;
             }
-
-            this.direction = bestMove;
+        } else {
+            this.stuckTimer = 0;
         }
 
-        // Apply speed to movement
-        this.x += this.direction.x * this.speed;
-        this.y += this.direction.y * this.speed;
+        this.lastPosition = { ...currentPosition };
+
+        if (this.mode === 'chase') {
+            const possibleMoves = this.getPossibleMoves(maze);
+            if (possibleMoves.length > 0) {
+                let bestMove = this.findBestMove(possibleMoves, playerPos, currentTile);
+                this.direction = bestMove;
+            }
+        }
+
+        // Apply movement with wall check
+        const nextX = this.x + this.direction.x * this.speed;
+        const nextY = this.y + this.direction.y * this.speed;
+
+        const nextTile = {
+            x: Math.floor(nextX / this.tileSize),
+            y: Math.floor(nextY / this.tileSize)
+        };
+
+        // Only move if next position is not a wall
+        if (!maze.isWall(nextTile.x, nextTile.y)) {
+            this.x = nextX;
+            this.y = nextY;
+        } else {
+            // If we hit a wall, try to find a new direction
+            this.unstuck(maze);
+        }
+    }
+
+    findBestMove(possibleMoves, playerPos, currentTile) {
+        let bestMove = possibleMoves[0];
+        let shortestDistance = Infinity;
+
+        for (const move of possibleMoves) {
+            const newX = currentTile.x + move.x;
+            const newY = currentTile.y + move.y;
+
+            const distance = Math.sqrt(
+                Math.pow(newX - playerPos.x, 2) +
+                Math.pow(newY - playerPos.y, 2)
+            );
+
+            // Add some randomness to prevent predictable movement
+            const randomFactor = Math.random() * 0.2; // 20% random variation
+            const adjustedDistance = distance * (1 + randomFactor);
+
+            if (adjustedDistance < shortestDistance) {
+                shortestDistance = adjustedDistance;
+                bestMove = move;
+            }
+        }
+
+        return bestMove;
+    }
+
+    unstuck(maze) {
+        const possibleMoves = this.getPossibleMoves(maze);
+        if (possibleMoves.length > 0) {
+            // Choose a random direction when stuck
+            const randomIndex = Math.floor(Math.random() * possibleMoves.length);
+            this.direction = possibleMoves[randomIndex];
+        }
     }
 
     draw(ctx) {

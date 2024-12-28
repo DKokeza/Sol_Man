@@ -15,6 +15,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 20px;
+    padding: 20px;
 }
 
 .game-title {
@@ -45,6 +46,12 @@ body {
     border: 2px solid #14F195;
     color: white;
     min-width: 200px;
+    max-height: 400px;
+    overflow-y: auto;
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
 }
 
 .leaderboard h2 {
