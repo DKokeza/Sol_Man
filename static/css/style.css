@@ -49,6 +49,10 @@ body {
     border-bottom: 1px solid #333;
 }
 
+.score-entry:last-child {
+    border-bottom: none;
+}
+
 .game-over {
     position: absolute;
     top: 50%;
@@ -89,4 +93,13 @@ button {
 
 button:hover {
     background: #ffd700;
+}
+
+.error {
+    color: #ff4444;
+    background: rgba(255, 0, 0, 0.1);
+    padding: 10px;
+    border-radius: 5px;
+    margin: 10px 0;
+    text-align: center;
 }

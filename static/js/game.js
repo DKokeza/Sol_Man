@@ -83,11 +83,16 @@ class Game {
                 }
                 return response.json();
             })
-            .then(scores => this.updateLeaderboard(scores))
+            .then(scores => {
+                if (!Array.isArray(scores)) {
+                    throw new Error('Invalid scores data received');
+                }
+                this.updateLeaderboard(scores);
+            })
             .catch(error => {
                 console.error('Error loading high scores:', error);
                 const leaderboard = document.getElementById('highScores');
-                leaderboard.innerHTML = '<p>Unable to load scores. Please try again later.</p>';
+                leaderboard.innerHTML = '<p class="error">Unable to load scores. Please try again later.</p>';
             });
     }
 
@@ -99,8 +104,8 @@ class Game {
         }
         leaderboard.innerHTML = scores.map((score, index) => `
             <div class="score-entry">
-                <span>${index + 1}. ${score.name}</span>
-                <span>${score.score}</span>
+                <span>${index + 1}. ${score.name || 'Unknown'}</span>
+                <span>${score.score || 0}</span>
             </div>
         `).join('');
     }
@@ -256,7 +261,8 @@ async function submitScore() {
         }
     } catch (error) {
         console.error('Error submitting score:', error);
-        alert('Failed to submit score. Please try again.');
+        document.getElementById('scoreSubmission').innerHTML = 
+            '<p class="error">Failed to submit score. Please try again.</p>';
     }
 }
 
