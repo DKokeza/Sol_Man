@@ -278,22 +278,50 @@ class Game {
     gameLoop() {
         try {
             if (this.gameActive) {
-                this.update();
-                this.draw();
-                requestAnimationFrame(() => this.gameLoop());
+                try {
+                    this.update();
+                } catch (updateError) {
+                    console.error('Error in game update:', updateError);
+                    throw updateError;
+                }
+
+                try {
+                    this.draw();
+                } catch (drawError) {
+                    console.error('Error in game draw:', drawError);
+                    throw drawError;
+                }
+
+                // Continue the game loop
+                if (this.gameActive) {
+                    requestAnimationFrame(() => this.gameLoop());
+                }
             }
         } catch (error) {
-            console.error('Error in game loop:', error);
+            console.error('Critical error in game loop:', error);
             this.gameActive = false;
-            this.handleGameError();
+            this.handleGameError(error);
         }
     }
 
-    handleGameError() {
+    handleGameError(error) {
+        console.error('Game error details:', {
+            error: error.message,
+            stack: error.stack,
+            gameState: {
+                active: this.gameActive,
+                score: this.score,
+                level: this.level,
+                playerPos: this.player ? { x: this.player.x, y: this.player.y } : null,
+                ghostsCount: this.ghosts ? this.ghosts.length : 0
+            }
+        });
+
         const errorMessage = document.createElement('div');
         errorMessage.className = 'error';
         errorMessage.innerHTML = `
             <p>An error occurred during gameplay.</p>
+            <p>Error details: ${error.message}</p>
             <button onclick="location.reload()">Restart Game</button>
         `;
         document.body.appendChild(errorMessage);
