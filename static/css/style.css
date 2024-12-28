@@ -10,29 +10,26 @@ body {
 }
 
 .game-container {
-    position: relative;  /* Ensure container is relative for absolute positioning */
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 20px;
     padding: 20px;
-    min-height: 100vh;
 }
 
 .game-title {
     color: #14F195;
     font-size: 48px;
-    margin: 0;  /* Reset margin */
+    margin: 0;
     text-shadow: 0 0 10px rgba(20, 241, 149, 0.5);
     letter-spacing: 2px;
-    position: relative;
-    z-index: 2;
 }
 
 .score-board {
     color: white;
     font-size: 24px;
-    margin: 20px auto;  /* Reset margin to default */
+    margin: 10px auto;
     padding: 10px 20px;
     display: flex;
     justify-content: space-between;
@@ -41,11 +38,8 @@ body {
     border: 1px solid #14F195;
     border-radius: 8px;
     width: fit-content;
-    position: absolute;  /* Changed to absolute positioning */
-    top: 120px;  /* Position it below the title */
-    left: 50%;  /* Center horizontally */
-    transform: translateX(-50%);  /* Ensure perfect centering */
-    z-index: 1;
+    z-index: 1000;
+    position: relative;
 }
 
 .score-board span {
@@ -57,7 +51,6 @@ body {
 }
 
 #gameCanvas {
-    margin-top: 60px;  /* Add space for score board */
     border: 2px solid #14F195;
     background: #000;
 }
