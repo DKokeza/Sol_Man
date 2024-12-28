@@ -1,26 +1,33 @@
 class Game {
     constructor() {
-        this.canvas = document.getElementById('gameCanvas');
-        this.ctx = this.canvas.getContext('2d');
-        this.tileSize = 20;
+        try {
+            this.canvas = document.getElementById('gameCanvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.tileSize = 20;
 
-        this.canvas.width = 400;
-        this.canvas.height = 400;
+            this.canvas.width = 400;
+            this.canvas.height = 400;
 
-        this.score = 0;
-        this.lives = 3;
-        this.level = 1;
-        this.isInvulnerable = false;
-        this.invulnerabilityDuration = 2000;
-        this.bitcoinPoints = 50;
-        this.gameActive = true;
-        this.processingCollision = false;
+            this.score = 0;
+            this.lives = 3;
+            this.level = 1;
+            this.isInvulnerable = false;
+            this.invulnerabilityDuration = 2000;
+            this.gameActive = true;
+            this.processingCollision = false;
+            this.bitcoinPoints = 50;
 
-        this.initializeLevel();
-        this.audioManager = new AudioManager();
-        this.loadHighScores();
-        this.bindControls();
-        this.gameLoop();
+            this.initializeLevel();
+            this.audioManager = new AudioManager();
+            this.loadHighScores();
+            this.bindControls();
+            this.gameLoop();
+
+            console.log('Game initialized successfully');
+        } catch (error) {
+            console.error('Error initializing game:', error);
+            document.body.innerHTML = '<div class="error">Failed to initialize game. Please refresh the page.</div>';
+        }
     }
 
     initializeLevel() {
@@ -75,25 +82,24 @@ class Game {
         });
     }
 
-    loadHighScores() {
-        fetch('/api/scores')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(scores => {
-                if (!Array.isArray(scores)) {
-                    throw new Error('Invalid scores data received');
-                }
-                this.updateLeaderboard(scores);
-            })
-            .catch(error => {
-                console.error('Error loading high scores:', error);
-                const leaderboard = document.getElementById('highScores');
-                leaderboard.innerHTML = '<p class="error">Unable to load scores. Please try again later.</p>';
-            });
+    async loadHighScores() {
+        try {
+            const response = await fetch('/api/scores');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const scores = await response.json();
+            console.log('Scores loaded successfully:', scores);
+
+            if (!Array.isArray(scores)) {
+                throw new Error('Invalid scores data received');
+            }
+            this.updateLeaderboard(scores);
+        } catch (error) {
+            console.error('Error loading high scores:', error);
+            const leaderboard = document.getElementById('highScores');
+            leaderboard.innerHTML = '<p class="error">Unable to load scores. Please try again later.</p>';
+        }
     }
 
     updateLeaderboard(scores) {
@@ -215,9 +221,27 @@ class Game {
     }
 
     gameLoop() {
-        this.update();
-        this.draw();
-        requestAnimationFrame(() => this.gameLoop());
+        try {
+            if (this.gameActive) {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        } catch (error) {
+            console.error('Error in game loop:', error);
+            this.gameActive = false;
+            this.handleGameError();
+        }
+    }
+
+    handleGameError() {
+        const errorMessage = document.createElement('div');
+        errorMessage.className = 'error';
+        errorMessage.innerHTML = `
+            <p>An error occurred during gameplay.</p>
+            <button onclick="location.reload()">Restart Game</button>
+        `;
+        document.body.appendChild(errorMessage);
     }
 
     gameOver(won = false) {
@@ -267,5 +291,11 @@ async function submitScore() {
 }
 
 window.addEventListener('load', () => {
-    window.game = new Game();
+    try {
+        window.game = new Game();
+        console.log('Game loaded successfully');
+    } catch (error) {
+        console.error('Failed to start game:', error);
+        document.body.innerHTML = '<div class="error">Failed to start game. Please refresh the page.</div>';
+    }
 });
