@@ -1,18 +1,17 @@
 class Ghost {
-    constructor(x, y, tileSize, color) {
+    constructor(x, y, tileSize, color, speed = 1) {
         this.x = x * tileSize;
         this.y = y * tileSize;
         this.tileSize = tileSize;
         this.color = color;
         this.direction = { x: 0, y: 0 };
-        this.speed = 1;
-        this.mode = 'chase'; // chase or scatter
+        this.speed = speed;
+        this.mode = 'chase';
     }
 
     update(playerPos, maze) {
         const currentTile = this.getGridPosition();
-        
-        // Simple AI: Try to move towards the player
+
         if (this.mode === 'chase') {
             const possibleMoves = this.getPossibleMoves(maze);
             let bestMove = { x: 0, y: 0 };
@@ -33,13 +32,14 @@ class Ghost {
             this.direction = bestMove;
         }
 
+        // Apply speed to movement
         this.x += this.direction.x * this.speed;
         this.y += this.direction.y * this.speed;
     }
 
     draw(ctx) {
         ctx.fillStyle = this.color;
-        
+
         // Ghost body
         ctx.beginPath();
         ctx.arc(
@@ -49,7 +49,7 @@ class Ghost {
             Math.PI,
             0
         );
-        
+
         // Ghost skirt
         ctx.lineTo(this.x + this.tileSize, this.y + this.tileSize);
         ctx.lineTo(this.x, this.y + this.tileSize);

@@ -9,25 +9,45 @@ class Game {
 
         this.score = 0;
         this.lives = 3;
+        this.level = 1;
         this.isInvulnerable = false;
         this.invulnerabilityDuration = 2000;
         this.bitcoinPoints = 50;
         this.gameActive = true;
         this.processingCollision = false;
 
-        this.maze = new Maze(20, 20, this.tileSize);
-        this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
-        this.ghosts = [
-            new Ghost(9, 9, this.tileSize, 'red'),
-            new Ghost(10, 9, this.tileSize, 'pink'),
-            new Ghost(11, 9, this.tileSize, 'cyan'),
-            new Ghost(10, 8, this.tileSize, 'orange')
-        ];
-
+        this.initializeLevel();
         this.audioManager = new AudioManager();
         this.loadHighScores();
         this.bindControls();
         this.gameLoop();
+    }
+
+    initializeLevel() {
+        this.maze = new Maze(20, 20, this.tileSize);
+        this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
+
+        // Create ghosts with increasing speed based on level
+        const baseSpeed = 1 + (this.level - 1) * 0.2; // Speed increases by 20% each level
+        this.ghosts = [
+            new Ghost(9, 9, this.tileSize, 'red', baseSpeed),
+            new Ghost(10, 9, this.tileSize, 'pink', baseSpeed),
+            new Ghost(11, 9, this.tileSize, 'cyan', baseSpeed),
+            new Ghost(10, 8, this.tileSize, 'orange', baseSpeed)
+        ];
+
+        // Update display
+        document.getElementById('level').textContent = this.level;
+    }
+
+    nextLevel() {
+        this.level++;
+        this.initializeLevel();
+        // Give player brief invulnerability when starting new level
+        this.isInvulnerable = true;
+        setTimeout(() => {
+            this.isInvulnerable = false;
+        }, 1000);
     }
 
     bindControls() {
@@ -135,8 +155,9 @@ class Game {
             }
         }
 
-        if (this.maze.dots.length === 0) {
-            this.gameOver(true);
+        // Check if level is complete
+        if (this.maze.dots.length === 0 && this.maze.bitcoins.length === 0) {
+            this.nextLevel();
         }
     }
 
