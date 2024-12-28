@@ -9,6 +9,8 @@ class Game {
 
         this.score = 0;
         this.lives = 3;
+        this.isInvulnerable = false;
+        this.invulnerabilityDuration = 2000; // 2 seconds
 
         this.maze = new Maze(20, 20, this.tileSize);
         this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
@@ -73,29 +75,18 @@ class Game {
         }
 
         // Update ghosts and check collisions
-        for (const ghost of this.ghosts) {
-            ghost.update(gridPos, this.maze);
+        if (!this.isInvulnerable) {
+            for (const ghost of this.ghosts) {
+                ghost.update(gridPos, this.maze);
 
-            const distance = Math.sqrt(
-                Math.pow(this.player.x - (ghost.x + this.tileSize/2), 2) +
-                Math.pow(this.player.y - (ghost.y + this.tileSize/2), 2)
-            );
+                const distance = Math.sqrt(
+                    Math.pow(this.player.x - (ghost.x + this.tileSize/2), 2) +
+                    Math.pow(this.player.y - (ghost.y + this.tileSize/2), 2)
+                );
 
-            if (distance < this.tileSize) {
-                this.lives--;
-                document.getElementById('lives').textContent = this.lives;
-                if (this.audioManager) {
-                    try {
-                        this.audioManager.play('death');
-                    } catch (e) {
-                        console.log('Audio play error:', e);
-                    }
-                }
-
-                if (this.lives <= 0) {
-                    this.gameOver();
-                } else {
-                    this.resetPositions();
+                if (distance < this.tileSize) {
+                    this.handleCollision();
+                    break; // Exit loop after first collision
                 }
             }
         }
@@ -106,10 +97,38 @@ class Game {
         }
     }
 
+    handleCollision() {
+        this.lives--;
+        document.getElementById('lives').textContent = this.lives;
+        if (this.audioManager) {
+            try {
+                this.audioManager.play('death');
+            } catch (e) {
+                console.log('Audio play error:', e);
+            }
+        }
+
+        if (this.lives <= 0) {
+            this.gameOver();
+        } else {
+            this.resetPositions();
+            // Set invulnerability
+            this.isInvulnerable = true;
+            setTimeout(() => {
+                this.isInvulnerable = false;
+            }, this.invulnerabilityDuration);
+        }
+    }
+
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.maze.draw(this.ctx);
-        this.player.draw(this.ctx);
+
+        // Make player blink during invulnerability
+        if (!this.isInvulnerable || Math.floor(Date.now() / 200) % 2) {
+            this.player.draw(this.ctx);
+        }
+
         for (const ghost of this.ghosts) {
             ghost.draw(this.ctx);
         }
@@ -122,9 +141,12 @@ class Game {
     }
 
     resetPositions() {
+        // Stop player movement
+        this.player.setDirection({ x: 0, y: 0 });
+
+        // Reset positions
         this.player.x = 10 * this.tileSize;
         this.player.y = 15 * this.tileSize;
-        this.player.direction = { x: 0, y: 0 };
 
         this.ghosts.forEach((ghost, index) => {
             ghost.x = (9 + index) * this.tileSize;
