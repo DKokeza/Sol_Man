@@ -13,7 +13,7 @@ class Game {
             this.level = 1;
             this.isInvulnerable = false;
             this.invulnerabilityDuration = 2000;
-            this.gameActive = true;
+            this.gameActive = false;  // Changed to false initially
             this.processingCollision = false;
             this.bitcoinPoints = 50;
 
@@ -21,7 +21,9 @@ class Game {
             this.audioManager = new AudioManager();
             this.loadHighScores();
             this.bindControls();
-            this.gameLoop();
+
+            // Initial render without starting the game loop
+            this.draw();
 
             console.log('Game initialized successfully');
         } catch (error) {
@@ -59,6 +61,16 @@ class Game {
 
     bindControls() {
         document.addEventListener('keydown', (e) => {
+            // Check if it's the first arrow key press
+            if (!this.gameActive && 
+                (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
+                 e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                // Hide instructions and start game
+                document.getElementById('instructions').classList.add('hidden');
+                this.gameActive = true;
+                this.gameLoop();
+            }
+
             if (!this.gameActive) return;
 
             if (this.audioManager) {

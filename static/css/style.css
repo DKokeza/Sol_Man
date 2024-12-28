@@ -167,3 +167,75 @@ button:hover {
     font-size: 14px;
     font-family: monospace;
 }
+
+/* Add these styles after the existing .wallet-info class */
+
+.instructions-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    border: 2px solid #14F195;
+    color: white;
+    text-align: center;
+    z-index: 1000;
+    min-width: 300px;
+}
+
+.instructions-overlay h2 {
+    color: #14F195;
+    margin-bottom: 20px;
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+}
+
+.key-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 10px 0;
+}
+
+.key-row {
+    display: flex;
+    gap: 5px;
+}
+
+.key {
+    width: 40px;
+    height: 40px;
+    background: #14F195;
+    color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.start-hint {
+    color: #14F195;
+    font-size: 1.2em;
+    margin-top: 20px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.hidden {
+    display: none !important;
+}
