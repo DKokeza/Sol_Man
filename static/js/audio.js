@@ -1,10 +1,11 @@
 class AudioManager {
     constructor() {
-        // Lazy initialize audio context on first user interaction
         this.audioContext = null;
         this.soundEffects = {
             chomp: { frequency: 440, duration: 0.1 },
-            death: { frequency: 200, duration: 0.3 }
+            death: { frequency: 200, duration: 0.3 },
+            powerPellet: { frequency: 600, duration: 0.2 },
+            ghostEaten: { frequency: 800, duration: 0.2 }
         };
         this.activeNodes = new Set();
     }

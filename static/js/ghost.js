@@ -1,21 +1,52 @@
 class Ghost {
     constructor(x, y, tileSize, color, speed) {
-        // Store both grid and pixel positions
         this.gridX = x;
         this.gridY = y;
         this.x = x * tileSize;
         this.y = y * tileSize;
         this.tileSize = tileSize;
+        this.originalColor = color;
         this.color = color;
         this.speed = speed;
+        this.originalSpeed = speed;
         this.direction = { x: 0, y: 0 };
-        this.moveCounter = 0;
         this.isMoving = false;
         this.targetX = this.x;
         this.targetY = this.y;
+        this.isVulnerable = false;
+        this.isReturning = false;
+        this.blinkStart = 0;
+        this.vulnerableTimer = null;
 
         console.log(`Ghost ${color} initialized at grid (${x}, ${y}), pixel (${this.x}, ${this.y})`);
         this.randomizeDirection();
+    }
+
+    makeVulnerable(duration) {
+        this.isVulnerable = true;
+        this.color = '#2121ff'; // Blue color for vulnerable state
+        this.speed = this.originalSpeed * 0.5; // Slow down when vulnerable
+        this.blinkStart = Date.now() + (duration - 2000); // Start blinking 2 seconds before end
+
+        // Clear existing timer if any
+        if (this.vulnerableTimer) {
+            clearTimeout(this.vulnerableTimer);
+        }
+
+        this.vulnerableTimer = setTimeout(() => {
+            this.resetVulnerability();
+        }, duration);
+    }
+
+    resetVulnerability() {
+        this.isVulnerable = false;
+        this.color = this.originalColor;
+        this.speed = this.originalSpeed;
+        this.blinkStart = 0;
+        if (this.vulnerableTimer) {
+            clearTimeout(this.vulnerableTimer);
+            this.vulnerableTimer = null;
+        }
     }
 
     update(playerPos, maze) {
@@ -38,7 +69,6 @@ class Ghost {
                 this.gridX = Math.round(this.x / this.tileSize);
                 this.gridY = Math.round(this.y / this.tileSize);
                 this.isMoving = false;
-                console.log(`Ghost ${this.color} reached grid position (${this.gridX}, ${this.gridY})`);
             } else {
                 // Continue moving towards target
                 this.x += (dx / distance) * this.speed;
@@ -48,6 +78,58 @@ class Ghost {
         } catch (error) {
             console.error(`Ghost ${this.color} update error:`, error);
             this.resetToLastValidPosition();
+        }
+    }
+
+    draw(ctx) {
+        try {
+            // Handle vulnerable state visuals
+            if (this.isVulnerable) {
+                const timeLeft = this.vulnerableTimer?._idleStart + this.vulnerableTimer?._idleTimeout - Date.now();
+                if (timeLeft < 2000 && timeLeft > 0) {
+                    // Blink when vulnerability is about to end
+                    this.color = Math.floor(Date.now() / 250) % 2 === 0 ? '#2121ff' : '#ffffff';
+                }
+            }
+
+            ctx.fillStyle = this.color;
+
+            // Ghost body
+            ctx.beginPath();
+            ctx.arc(
+                this.x + this.tileSize / 2,
+                this.y + this.tileSize / 2,
+                this.tileSize / 2,
+                Math.PI,
+                0
+            );
+            ctx.lineTo(this.x + this.tileSize, this.y + this.tileSize);
+            ctx.lineTo(this.x, this.y + this.tileSize);
+            ctx.closePath();
+            ctx.fill();
+
+            // Eyes (white when normal, blue when vulnerable)
+            const eyeColor = this.isVulnerable ? this.color : 'white';
+            ctx.fillStyle = eyeColor;
+            ctx.beginPath();
+            ctx.arc(
+                this.x + this.tileSize / 3,
+                this.y + this.tileSize / 2,
+                3,
+                0,
+                Math.PI * 2
+            );
+            ctx.arc(
+                this.x + (this.tileSize * 2 / 3),
+                this.y + this.tileSize / 2,
+                3,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+
+        } catch (error) {
+            console.error(`Ghost ${this.color} drawing error:`, error);
         }
     }
 
@@ -79,7 +161,6 @@ class Ghost {
                 this.targetX = targetGridX * this.tileSize;
                 this.targetY = targetGridY * this.tileSize;
                 this.isMoving = true;
-                console.log(`Ghost ${this.color} moving to (${targetGridX}, ${targetGridY})`);
             }
 
         } catch (error) {
@@ -103,7 +184,6 @@ class Ghost {
 
     isValidPosition(maze, gridX, gridY) {
         try {
-            // Check maze boundaries
             if (gridX < 0 || gridY < 0 || gridX >= maze.width || gridY >= maze.height) {
                 return false;
             }
@@ -130,48 +210,5 @@ class Ghost {
             { x: 0, y: -1 }
         ];
         this.direction = directions[Math.floor(Math.random() * directions.length)];
-        console.log(`Ghost ${this.color} initial direction set to (${this.direction.x}, ${this.direction.y})`);
-    }
-
-    draw(ctx) {
-        try {
-            ctx.fillStyle = this.color;
-
-            // Ghost body
-            ctx.beginPath();
-            ctx.arc(
-                this.x + this.tileSize / 2,
-                this.y + this.tileSize / 2,
-                this.tileSize / 2,
-                Math.PI,
-                0
-            );
-            ctx.lineTo(this.x + this.tileSize, this.y + this.tileSize);
-            ctx.lineTo(this.x, this.y + this.tileSize);
-            ctx.closePath();
-            ctx.fill();
-
-            // Eyes
-            ctx.fillStyle = 'white';
-            ctx.beginPath();
-            ctx.arc(
-                this.x + this.tileSize / 3,
-                this.y + this.tileSize / 2,
-                3,
-                0,
-                Math.PI * 2
-            );
-            ctx.arc(
-                this.x + (this.tileSize * 2 / 3),
-                this.y + this.tileSize / 2,
-                3,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
-
-        } catch (error) {
-            console.error(`Ghost ${this.color} drawing error:`, error);
-        }
     }
 }

@@ -5,6 +5,7 @@ class Maze {
         this.tileSize = tileSize;
         this.grid = [];
         this.dots = [];
+        this.powerPellets = [];
         this.bitcoins = []; 
         this.generateMaze();
     }
@@ -12,11 +13,11 @@ class Maze {
     generateMaze() {
         const mazeTemplate = [
             "######################",
-            "#......B.........B.##",
+            "#......B.....P...B.##",
             "#.####.#####.####..#",
             "#.#  #.#   #.#  #..#",
             "#.####.#####.####..#",
-            "#....................#",
+            "#........P..........#",
             "#.####.##.##.####..#",
             "#.####.##.##.####..#",
             "#......##B##........#",
@@ -25,24 +26,27 @@ class Maze {
             "######.##.##.######",
             "#......##B##........#",
             "#.####.#####.####..#",
-            "#....................#",
+            "#........P..........#",
             "#.####.#####.####..#",
             "#.#  #.#   #.#  #..#",
             "#.####.#####.####..#",
-            "#......B.........B..#",
+            "#......B.....P...B..#",
             "######################"
         ];
 
         this.grid = mazeTemplate.map(row => row.split(''));
 
-        // Generate dots and bitcoins
+        // Generate dots, power pellets and bitcoins
         for (let y = 0; y < this.height; y++) {
             for (let x = 0; x < this.width; x++) {
                 if (this.grid[y][x] === '.') {
                     this.dots.push({ x, y });
                 } else if (this.grid[y][x] === 'B') {
                     this.bitcoins.push({ x, y });
-                    this.grid[y][x] = '.'; 
+                    this.grid[y][x] = '.';
+                } else if (this.grid[y][x] === 'P') {
+                    this.powerPellets.push({ x, y });
+                    this.grid[y][x] = '.';
                 }
             }
         }
@@ -78,9 +82,23 @@ class Maze {
             ctx.fill();
         }
 
+        // Draw power pellets (larger, flashing dots)
+        const flashingAlpha = (Math.sin(Date.now() / 200) + 1) / 2;
+        ctx.fillStyle = `rgba(255, 255, 255, ${flashingAlpha})`;
+        for (const pellet of this.powerPellets) {
+            ctx.beginPath();
+            ctx.arc(
+                pellet.x * this.tileSize + this.tileSize / 2,
+                pellet.y * this.tileSize + this.tileSize / 2,
+                6,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        }
+
         // Draw Solana coins
         for (const bitcoin of this.bitcoins) {
-            // Draw larger circle with Solana's color
             ctx.fillStyle = '#14F195';
             ctx.beginPath();
             ctx.arc(
@@ -92,7 +110,6 @@ class Maze {
             );
             ctx.fill();
 
-            // Draw "SOL" text
             ctx.fillStyle = '#ffffff';
             ctx.font = `${this.tileSize/3}px Arial`;
             ctx.textAlign = 'center';
@@ -122,6 +139,15 @@ class Maze {
         const index = this.bitcoins.findIndex(coin => coin.x === x && coin.y === y);
         if (index !== -1) {
             this.bitcoins.splice(index, 1);
+            return true;
+        }
+        return false;
+    }
+
+    removePowerPellet(x, y) {
+        const index = this.powerPellets.findIndex(pellet => pellet.x === x && pellet.y === y);
+        if (index !== -1) {
+            this.powerPellets.splice(index, 1);
             return true;
         }
         return false;

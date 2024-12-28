@@ -163,7 +163,6 @@ class Game {
         if (!this.gameActive) return;
 
         try {
-            // Try to change direction if there's a pending direction change
             this.player.tryChangeDirection(this.maze);
 
             const nextPos = {
@@ -181,8 +180,18 @@ class Game {
                 console.log(`Player position updated: (${this.player.x}, ${this.player.y})`);
             }
 
+            // Check for power pellet collection
+            if (this.maze.removePowerPellet(gridPos.x, gridPos.y)) {
+                console.log('Power pellet collected, making ghosts vulnerable');
+                this.score += 50;
+                if (this.audioManager) {
+                    this.audioManager.play('chomp');
+                }
+                this.makeGhostsVulnerable();
+            }
+
             // Update ghosts and check collisions
-            if (!this.isInvulnerable && !this.processingCollision) {
+            if (!this.processingCollision) {
                 for (const ghost of this.ghosts) {
                     ghost.update(gridPos, this.maze);
 
@@ -192,8 +201,13 @@ class Game {
                     );
 
                     if (distance < this.tileSize) {
-                        console.log('Ghost collision detected');
-                        this.handleCollision();
+                        if (ghost.isVulnerable) {
+                            console.log('Vulnerable ghost eaten');
+                            this.eatGhost(ghost);
+                        } else if (!this.isInvulnerable) {
+                            console.log('Ghost collision detected');
+                            this.handleCollision();
+                        }
                         break;
                     }
                 }
@@ -218,7 +232,7 @@ class Game {
             }
 
             // Check level completion
-            if (this.maze.dots.length === 0 && this.maze.bitcoins.length === 0) {
+            if (this.maze.dots.length === 0 && this.maze.bitcoins.length === 0 && this.maze.powerPellets.length === 0) {
                 console.log('Level complete, advancing to next level');
                 this.nextLevel();
             }
@@ -226,6 +240,28 @@ class Game {
         } catch (error) {
             console.error('Error in game update:', error);
             this.handleGameError(error);
+        }
+    }
+
+    makeGhostsVulnerable() {
+        const vulnerabilityDuration = 10000; // 10 seconds
+        for (const ghost of this.ghosts) {
+            ghost.makeVulnerable(vulnerabilityDuration);
+        }
+    }
+
+    eatGhost(ghost) {
+        // Reset ghost position
+        ghost.resetToLastValidPosition();
+        ghost.resetVulnerability();
+
+        // Award points (ghosts are worth more points each time during the same power pellet duration)
+        const ghostPoints = 200;
+        this.score += ghostPoints;
+        document.getElementById('score').textContent = this.score;
+
+        if (this.audioManager) {
+            this.audioManager.play('chomp');
         }
     }
 
