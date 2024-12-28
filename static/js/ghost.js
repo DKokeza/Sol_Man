@@ -14,6 +14,26 @@ class Ghost {
         this.pathUpdateTimer = 0;
         this.momentum = 0.8; // Add momentum for smoother movement
 
+        // Personality based on color
+        switch (color) {
+            case 'red': // Direct chaser
+                this.personalityOffset = { x: 0, y: 0 };
+                this.randomness = 0.1;
+                break;
+            case 'pink': // Tries to cut off the player
+                this.personalityOffset = { x: 4, y: 4 };
+                this.randomness = 0.2;
+                break;
+            case 'cyan': // Random movement with slight chase tendency
+                this.personalityOffset = { x: -4, y: -4 };
+                this.randomness = 0.4;
+                break;
+            case 'orange': // Stays in general area unless player is close
+                this.personalityOffset = { x: -2, y: 2 };
+                this.randomness = 0.3;
+                break;
+        }
+
         console.log(`Ghost initialized: Color=${color}, Position=(${x},${y}), Speed=${speed}`);
     }
 
@@ -52,7 +72,7 @@ class Ghost {
             }
         }
 
-        // Apply movement with improved collision detection
+        // Apply movement with improved collision detection and wall sliding
         const nextX = this.x + this.direction.x * this.speed;
         const nextY = this.y + this.direction.y * this.speed;
         const nextTile = this.getTileFromPosition(nextX, nextY);
@@ -62,13 +82,13 @@ class Ghost {
             this.y = nextY;
             this.lastDirection = { ...this.direction };
         } else {
-            // If collision detected, try to slide along walls
-            if (!this.isCollision(maze, { x: currentTile.x + this.direction.x, y: currentTile.y })) {
+            // Try to slide along walls
+            if (!this.isCollision(maze, { x: currentTile.x + Math.sign(this.direction.x), y: currentTile.y })) {
                 this.y = currentTile.y * this.tileSize + this.tileSize / 2;
-                this.x = nextX;
-            } else if (!this.isCollision(maze, { x: currentTile.x, y: currentTile.y + this.direction.y })) {
+                this.x += this.direction.x * this.speed;
+            } else if (!this.isCollision(maze, { x: currentTile.x, y: currentTile.y + Math.sign(this.direction.y) })) {
                 this.x = currentTile.x * this.tileSize + this.tileSize / 2;
-                this.y = nextY;
+                this.y += this.direction.y * this.speed;
             } else {
                 this.handleCollision(maze, currentTile);
             }
@@ -81,16 +101,20 @@ class Ghost {
             y: Math.floor(playerPos.y / this.tileSize)
         };
 
-        // Add some randomness to prevent all ghosts from following the same path
-        const randomOffset = {
-            x: Math.floor(Math.random() * 3) - 1,
-            y: Math.floor(Math.random() * 3) - 1
+        // Add personality-based offset and randomness
+        const targetOffset = {
+            x: this.personalityOffset.x + (Math.random() * 2 - 1) * this.randomness * 10,
+            y: this.personalityOffset.y + (Math.random() * 2 - 1) * this.randomness * 10
         };
 
         this.targetTile = {
-            x: playerTile.x + randomOffset.x,
-            y: playerTile.y + randomOffset.y
+            x: playerTile.x + targetOffset.x,
+            y: playerTile.y + targetOffset.y
         };
+
+        // Ensure target is within maze bounds
+        this.targetTile.x = Math.max(0, Math.min(19, this.targetTile.x));
+        this.targetTile.y = Math.max(0, Math.min(19, this.targetTile.y));
     }
 
     getMoveDirectionToTarget(currentTile, maze) {
@@ -114,9 +138,8 @@ class Ghost {
                 Math.pow(newTile.y - this.targetTile.y, 2)
             );
 
-            // Add slight randomness to prevent predictable movement
-            const randomFactor = Math.random() * 0.3; // Reduced randomness
-            const score = distance * (1 + randomFactor);
+            // Add personality-based randomness
+            const score = distance * (1 + Math.random() * this.randomness);
 
             if (score < bestScore) {
                 bestScore = score;
@@ -128,23 +151,20 @@ class Ghost {
     }
 
     handleStuckState(maze, currentTile) {
-        console.log(`Ghost ${this.color} stuck, finding new path`);
-
-        // Reset momentum when stuck
+        // Reset momentum temporarily for better responsiveness
         this.momentum = 0.2;
 
-        // Find all possible moves excluding the current direction
+        // Find new direction excluding current direction
         const possibleMoves = this.getPossibleMoves(maze, currentTile)
             .filter(move => move.x !== this.direction.x || move.y !== this.direction.y);
 
         if (possibleMoves.length > 0) {
             const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
             this.direction = randomMove;
-            // Reset target to force path recalculation
-            this.targetTile = null;
+            this.targetTile = null; // Force path recalculation
         }
 
-        // Gradually restore momentum
+        // Restore momentum gradually
         setTimeout(() => {
             this.momentum = 0.8;
         }, 500);
