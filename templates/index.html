@@ -13,13 +13,21 @@
             <span>Lives: <span id="lives">3</span></span>
         </div>
         <canvas id="gameCanvas"></canvas>
+        <div class="leaderboard">
+            <h2>Top Scores</h2>
+            <div id="highScores"></div>
+        </div>
         <div id="gameOver" class="game-over hidden">
             <h2>Game Over</h2>
             <p>Final Score: <span id="finalScore">0</span></p>
+            <div id="scoreSubmission">
+                <input type="text" id="playerName" placeholder="Enter your name" maxlength="50">
+                <button onclick="submitScore()">Submit Score</button>
+            </div>
             <button onclick="location.reload()">Play Again</button>
         </div>
     </div>
-    
+
     <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
     <script src="{{ url_for('static', filename='js/maze.js') }}"></script>
     <script src="{{ url_for('static', filename='js/player.js') }}"></script>

@@ -11,7 +11,7 @@ class Game {
         this.lives = 3;
         this.isInvulnerable = false;
         this.invulnerabilityDuration = 2000; 
-        this.bitcoinPoints = 50; // Points for collecting a Bitcoin
+        this.bitcoinPoints = 50;
 
         this.maze = new Maze(20, 20, this.tileSize);
         this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
@@ -23,6 +23,7 @@ class Game {
         ];
 
         this.audioManager = new AudioManager();
+        this.loadHighScores();
         this.bindControls();
         this.gameLoop();
     }
@@ -48,6 +49,23 @@ class Game {
                     break;
             }
         });
+    }
+
+    loadHighScores() {
+        fetch('/api/scores')
+            .then(response => response.json())
+            .then(scores => this.updateLeaderboard(scores))
+            .catch(error => console.error('Error loading high scores:', error));
+    }
+
+    updateLeaderboard(scores) {
+        const leaderboard = document.getElementById('highScores');
+        leaderboard.innerHTML = scores.map((score, index) => `
+            <div class="score-entry">
+                <span>${index + 1}. ${score.name}</span>
+                <span>${score.score}</span>
+            </div>
+        `).join('');
     }
 
     update() {
@@ -93,7 +111,7 @@ class Game {
 
                 if (distance < this.tileSize) {
                     this.handleCollision();
-                    break; 
+                    break;
                 }
             }
         }
@@ -155,9 +173,44 @@ class Game {
     gameOver(won = false) {
         document.getElementById('gameOver').classList.remove('hidden');
         document.getElementById('finalScore').textContent = this.score;
+        this.loadHighScores(); 
+    }
+}
+
+// Functions for handling score submission
+async function submitScore() {
+    const playerName = document.getElementById('playerName').value.trim();
+    if (!playerName) {
+        alert('Please enter your name');
+        return;
+    }
+
+    const score = parseInt(document.getElementById('finalScore').textContent);
+
+    try {
+        const response = await fetch('/api/scores', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: playerName,
+                score: score
+            })
+        });
+
+        if (response.ok) {
+            document.getElementById('scoreSubmission').innerHTML = '<p>Score submitted successfully!</p>';
+            window.game.loadHighScores();
+        } else {
+            throw new Error('Failed to submit score');
+        }
+    } catch (error) {
+        console.error('Error submitting score:', error);
+        alert('Failed to submit score. Please try again.');
     }
 }
 
 window.addEventListener('load', () => {
-    new Game();
+    window.game = new Game();
 });
