@@ -33,63 +33,90 @@ class Game {
     }
 
     initializeLevel() {
-        this.maze = new Maze(20, 20, this.tileSize);
-        this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
+        try {
+            console.log(`Initializing level ${this.level}`);
+            this.maze = new Maze(20, 20, this.tileSize);
+            this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
 
-        // Create ghosts with increasing speed based on level
-        const baseSpeed = 1 + (this.level - 1) * 0.2; // Speed increases by 20% each level
-        this.ghosts = [
-            new Ghost(9, 9, this.tileSize, 'red', baseSpeed),
-            new Ghost(10, 9, this.tileSize, 'pink', baseSpeed),
-            new Ghost(11, 9, this.tileSize, 'cyan', baseSpeed),
-            new Ghost(10, 8, this.tileSize, 'orange', baseSpeed)
-        ];
+            // Create ghosts with increasing speed based on level
+            const baseSpeed = 1 + (this.level - 1) * 0.2; // Speed increases by 20% each level
+            this.ghosts = [
+                new Ghost(9, 9, this.tileSize, 'red', baseSpeed),
+                new Ghost(10, 9, this.tileSize, 'pink', baseSpeed),
+                new Ghost(11, 9, this.tileSize, 'cyan', baseSpeed),
+                new Ghost(10, 8, this.tileSize, 'orange', baseSpeed)
+            ];
 
-        // Update display
-        document.getElementById('level').textContent = this.level;
+            // Update display
+            document.getElementById('level').textContent = this.level;
+            console.log('Level initialization complete');
+        } catch (error) {
+            console.error('Error initializing level:', error);
+            this.handleGameError();
+        }
     }
 
     nextLevel() {
-        this.level++;
-        this.initializeLevel();
-        // Give player brief invulnerability when starting new level
-        this.isInvulnerable = true;
-        setTimeout(() => {
-            this.isInvulnerable = false;
-        }, 1000);
+        try {
+            console.log(`Advancing to level ${this.level + 1}`);
+            this.level++;
+            this.initializeLevel();
+            // Give player brief invulnerability when starting new level
+            this.isInvulnerable = true;
+            setTimeout(() => {
+                this.isInvulnerable = false;
+                console.log('Invulnerability period ended');
+            }, 1000);
+        } catch (error) {
+            console.error('Error advancing to next level:', error);
+            this.handleGameError();
+        }
     }
 
     bindControls() {
         document.addEventListener('keydown', (e) => {
-            // Check if it's the first arrow key press
-            if (!this.gameActive && 
-                (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
-                 e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
-                // Hide instructions and start game
-                document.getElementById('instructions').classList.add('hidden');
-                this.gameActive = true;
-                this.gameLoop();
-            }
+            try {
+                // Check if it's the first arrow key press
+                if (!this.gameActive && 
+                    (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || 
+                     e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+                    console.log('First arrow key pressed, starting game');
+                    // Hide instructions and start game
+                    document.getElementById('instructions').classList.add('hidden');
+                    this.gameActive = true;
+                    this.gameLoop();
+                }
 
-            if (!this.gameActive) return;
+                if (!this.gameActive) return;
 
-            if (this.audioManager) {
-                this.audioManager.initAudioContext();
-            }
+                if (this.audioManager) {
+                    this.audioManager.initAudioContext();
+                }
 
-            switch(e.key) {
-                case 'ArrowLeft':
-                    this.player.setDirection({ x: -1, y: 0 });
-                    break;
-                case 'ArrowRight':
-                    this.player.setDirection({ x: 1, y: 0 });
-                    break;
-                case 'ArrowUp':
-                    this.player.setDirection({ x: 0, y: -1 });
-                    break;
-                case 'ArrowDown':
-                    this.player.setDirection({ x: 0, y: 1 });
-                    break;
+                // Log direction changes
+                let newDirection = null;
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        newDirection = { x: -1, y: 0 };
+                        break;
+                    case 'ArrowRight':
+                        newDirection = { x: 1, y: 0 };
+                        break;
+                    case 'ArrowUp':
+                        newDirection = { x: 0, y: -1 };
+                        break;
+                    case 'ArrowDown':
+                        newDirection = { x: 0, y: 1 };
+                        break;
+                }
+
+                if (newDirection) {
+                    console.log(`Direction changed to: (${newDirection.x}, ${newDirection.y})`);
+                    this.player.setDirection(newDirection);
+                }
+            } catch (error) {
+                console.error('Error in control binding:', error);
+                this.handleGameError();
             }
         });
     }
@@ -326,4 +353,10 @@ window.addEventListener('load', () => {
         console.error('Failed to start game:', error);
         document.body.innerHTML = '<div class="error">Failed to start game. Please refresh the page.</div>';
     }
+});
+
+window.addEventListener('unhandledrejection', event => {
+    console.error('Unhandled promise rejection:', event.reason);
+    // Prevent the default handling
+    event.preventDefault();
 });

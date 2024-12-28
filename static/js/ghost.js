@@ -9,6 +9,7 @@ class Ghost {
         this.mode = 'chase';
         this.stuckTimer = 0;
         this.lastPosition = { x: x * tileSize, y: y * tileSize };
+        this.lastDirection = null;
 
         console.log(`Ghost initialized: Color=${color}, Position=(${x},${y}), Speed=${speed}`);
     }
@@ -21,9 +22,9 @@ class Ghost {
         if (Math.abs(currentPosition.x - this.lastPosition.x) < 0.1 &&
             Math.abs(currentPosition.y - this.lastPosition.y) < 0.1) {
             this.stuckTimer++;
-            if (this.stuckTimer > 30) { // Reduced from 60 to 30 frames for quicker response
+            if (this.stuckTimer > 20) { // Reduced timer for quicker response
                 console.log(`Ghost ${this.color} stuck at (${this.x},${this.y}), forcing direction change`);
-                this.unstuck(maze);
+                this.forceNewDirection(maze);
                 this.stuckTimer = 0;
             }
         } else {
@@ -39,6 +40,7 @@ class Ghost {
                 this.direction = bestMove;
             } else {
                 console.log(`Ghost ${this.color} has no valid moves at position (${this.x},${this.y})`);
+                this.forceNewDirection(maze);
             }
         }
 
@@ -55,13 +57,26 @@ class Ghost {
         if (!maze.isWall(nextTile.x, nextTile.y)) {
             this.x = nextX;
             this.y = nextY;
+            this.lastDirection = { ...this.direction };
         } else {
             console.log(`Ghost ${this.color} hit wall at (${nextTile.x},${nextTile.y})`);
-            this.unstuck(maze);
+            this.forceNewDirection(maze);
         }
     }
 
     findBestMove(possibleMoves, playerPos, currentTile) {
+        // Filter out the opposite of the last direction to prevent back-and-forth movement
+        if (this.lastDirection) {
+            possibleMoves = possibleMoves.filter(move => 
+                !(move.x === -this.lastDirection.x && move.y === -this.lastDirection.y)
+            );
+        }
+
+        // If no valid moves after filtering, allow all moves
+        if (possibleMoves.length === 0) {
+            possibleMoves = this.getPossibleMoves(maze);
+        }
+
         let bestMove = possibleMoves[0];
         let shortestDistance = Infinity;
 
@@ -74,8 +89,8 @@ class Ghost {
                 Math.pow(newY - playerPos.y, 2)
             );
 
-            // Increase randomness factor to prevent predictable movement
-            const randomFactor = Math.random() * 0.4; // Increased from 0.2 to 0.4
+            // Increase randomness factor significantly
+            const randomFactor = Math.random() * 0.6; // Increased randomness
             const adjustedDistance = distance * (1 + randomFactor);
 
             if (adjustedDistance < shortestDistance) {
@@ -87,15 +102,23 @@ class Ghost {
         return bestMove;
     }
 
-    unstuck(maze) {
+    forceNewDirection(maze) {
         const possibleMoves = this.getPossibleMoves(maze);
         if (possibleMoves.length > 0) {
-            // Choose a random direction when stuck
-            const randomIndex = Math.floor(Math.random() * possibleMoves.length);
-            this.direction = possibleMoves[randomIndex];
-            console.log(`Ghost ${this.color} unstuck, new direction: (${this.direction.x},${this.direction.y})`);
+            // Exclude the current direction from possible moves
+            const newMoves = possibleMoves.filter(move => 
+                move.x !== this.direction.x || move.y !== this.direction.y
+            );
+
+            // If we have alternative moves, use them, otherwise use all possible moves
+            const movesToUse = newMoves.length > 0 ? newMoves : possibleMoves;
+
+            // Choose a random direction
+            const randomIndex = Math.floor(Math.random() * movesToUse.length);
+            this.direction = movesToUse[randomIndex];
+            console.log(`Ghost ${this.color} new direction: (${this.direction.x},${this.direction.y})`);
         } else {
-            console.log(`Ghost ${this.color} unable to unstuck, no valid moves available`);
+            console.log(`Ghost ${this.color} unable to find new direction`);
         }
     }
 
