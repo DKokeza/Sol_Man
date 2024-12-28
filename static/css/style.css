@@ -29,7 +29,7 @@ body {
 .score-board {
     color: white;
     font-size: 24px;
-    margin: 30px auto 10px; /* Increased top margin from 10px to 30px */
+    margin: 50px auto 10px; /* Increased top margin from 30px to 50px */
     padding: 10px 20px;
     display: flex;
     justify-content: space-between;
@@ -38,8 +38,8 @@ body {
     border: 1px solid #14F195;
     border-radius: 8px;
     width: fit-content;
-    z-index: 1000;
-    position: relative;
+    z-index: 1; /* Lower z-index to prevent overlap */
+    position: relative; /* Added relative positioning */
 }
 
 .score-board span {
