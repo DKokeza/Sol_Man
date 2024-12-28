@@ -28,6 +28,11 @@ class Game {
 
     bindControls() {
         document.addEventListener('keydown', (e) => {
+            // Initialize audio context on first user interaction
+            if (this.audioManager) {
+                this.audioManager.initAudioContext();
+            }
+
             switch(e.key) {
                 case 'ArrowLeft':
                     this.player.setDirection({ x: -1, y: 0 });
@@ -46,7 +51,6 @@ class Game {
     }
 
     update() {
-        // Update player
         const nextPos = {
             x: this.player.x + this.player.direction.x * this.player.speed,
             y: this.player.y + this.player.direction.y * this.player.speed
@@ -65,11 +69,7 @@ class Game {
         if (this.maze.removeDot(gridPos.x, gridPos.y)) {
             this.score += 10;
             if (this.audioManager) {
-                try {
-                    this.audioManager.play('chomp');
-                } catch (e) {
-                    console.log('Audio play error:', e);
-                }
+                this.audioManager.play('chomp');
             }
             document.getElementById('score').textContent = this.score;
         }
@@ -100,12 +100,9 @@ class Game {
     handleCollision() {
         this.lives--;
         document.getElementById('lives').textContent = this.lives;
+
         if (this.audioManager) {
-            try {
-                this.audioManager.play('death');
-            } catch (e) {
-                console.log('Audio play error:', e);
-            }
+            this.audioManager.play('death');
         }
 
         if (this.lives <= 0) {
