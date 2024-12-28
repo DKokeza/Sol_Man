@@ -9,6 +9,8 @@ class Ghost {
         this.mode = 'chase';
         this.stuckTimer = 0;
         this.lastPosition = { x: x * tileSize, y: y * tileSize };
+
+        console.log(`Ghost initialized: Color=${color}, Position=(${x},${y}), Speed=${speed}`);
     }
 
     update(playerPos, maze) {
@@ -19,7 +21,8 @@ class Ghost {
         if (Math.abs(currentPosition.x - this.lastPosition.x) < 0.1 &&
             Math.abs(currentPosition.y - this.lastPosition.y) < 0.1) {
             this.stuckTimer++;
-            if (this.stuckTimer > 60) { // If stuck for 60 frames (about 1 second)
+            if (this.stuckTimer > 30) { // Reduced from 60 to 30 frames for quicker response
+                console.log(`Ghost ${this.color} stuck at (${this.x},${this.y}), forcing direction change`);
                 this.unstuck(maze);
                 this.stuckTimer = 0;
             }
@@ -34,6 +37,8 @@ class Ghost {
             if (possibleMoves.length > 0) {
                 let bestMove = this.findBestMove(possibleMoves, playerPos, currentTile);
                 this.direction = bestMove;
+            } else {
+                console.log(`Ghost ${this.color} has no valid moves at position (${this.x},${this.y})`);
             }
         }
 
@@ -51,7 +56,7 @@ class Ghost {
             this.x = nextX;
             this.y = nextY;
         } else {
-            // If we hit a wall, try to find a new direction
+            console.log(`Ghost ${this.color} hit wall at (${nextTile.x},${nextTile.y})`);
             this.unstuck(maze);
         }
     }
@@ -69,8 +74,8 @@ class Ghost {
                 Math.pow(newY - playerPos.y, 2)
             );
 
-            // Add some randomness to prevent predictable movement
-            const randomFactor = Math.random() * 0.2; // 20% random variation
+            // Increase randomness factor to prevent predictable movement
+            const randomFactor = Math.random() * 0.4; // Increased from 0.2 to 0.4
             const adjustedDistance = distance * (1 + randomFactor);
 
             if (adjustedDistance < shortestDistance) {
@@ -88,6 +93,9 @@ class Ghost {
             // Choose a random direction when stuck
             const randomIndex = Math.floor(Math.random() * possibleMoves.length);
             this.direction = possibleMoves[randomIndex];
+            console.log(`Ghost ${this.color} unstuck, new direction: (${this.direction.x},${this.direction.y})`);
+        } else {
+            console.log(`Ghost ${this.color} unable to unstuck, no valid moves available`);
         }
     }
 

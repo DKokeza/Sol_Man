@@ -29,10 +29,25 @@ body {
 .score-board {
     color: white;
     font-size: 24px;
-    margin-bottom: 20px;
+    margin: 10px auto;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
-    gap: 20px;
+    gap: 30px;
+    background: rgba(20, 241, 149, 0.1);
+    border: 1px solid #14F195;
+    border-radius: 8px;
+    width: fit-content;
+    z-index: 1000;
+    position: relative;
+}
+
+.score-board span {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 100px;
+    justify-content: center;
 }
 
 #gameCanvas {
@@ -167,8 +182,6 @@ button:hover {
     font-size: 14px;
     font-family: monospace;
 }
-
-/* Add these styles after the existing .wallet-info class */
 
 .instructions-overlay {
     position: absolute;
