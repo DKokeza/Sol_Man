@@ -20,7 +20,7 @@ class Ghost {
 
     makeVulnerable(duration) {
         this.isVulnerable = true;
-        this.color = '#2121ff';
+        this.color = '#9370DB'; // Changed to medium purple for better visibility
         this.speed = this.originalSpeed * 0.5;
 
         if (this.vulnerableTimer) {
@@ -80,7 +80,7 @@ class Ghost {
             if (this.isVulnerable) {
                 if (this.vulnerableTimer && 
                     this.vulnerableTimer._idleTimeout - (Date.now() - this.vulnerableTimer._idleStart) < 2000) {
-                    this.color = Math.floor(Date.now() / 250) % 2 === 0 ? '#2121ff' : '#ffffff';
+                    this.color = Math.floor(Date.now() / 250) % 2 === 0 ? '#9370DB' : '#ffffff';
                 }
             }
 
@@ -99,25 +99,26 @@ class Ghost {
             ctx.closePath();
             ctx.fill();
 
-            // Draw eyes
-            const eyeColor = this.isVulnerable ? this.color : 'white';
-            ctx.fillStyle = eyeColor;
-            ctx.beginPath();
-            ctx.arc(
-                this.x + this.tileSize / 3,
-                this.y + this.tileSize / 2,
-                3,
-                0,
-                Math.PI * 2
-            );
-            ctx.arc(
-                this.x + (this.tileSize * 2 / 3),
-                this.y + this.tileSize / 2,
-                3,
-                0,
-                Math.PI * 2
-            );
-            ctx.fill();
+            // Draw eyes (only when not vulnerable)
+            if (!this.isVulnerable) {
+                ctx.fillStyle = 'white';
+                ctx.beginPath();
+                ctx.arc(
+                    this.x + this.tileSize / 3,
+                    this.y + this.tileSize / 2,
+                    3,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.arc(
+                    this.x + (this.tileSize * 2 / 3),
+                    this.y + this.tileSize / 2,
+                    3,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+            }
         } catch (error) {
             console.error(`Ghost ${this.color} drawing error:`, error);
         }

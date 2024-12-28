@@ -185,7 +185,7 @@ class Game {
                 console.log('Power pellet collected, making ghosts vulnerable');
                 this.score += 50;
                 if (this.audioManager) {
-                    this.audioManager.play('chomp');
+                    this.audioManager.play('powerPellet');
                 }
                 this.makeGhostsVulnerable();
             }
@@ -196,11 +196,14 @@ class Game {
                     ghost.update(gridPos, this.maze);
 
                     const distance = Math.sqrt(
-                        Math.pow(this.player.x - (ghost.x + this.tileSize/2), 2) +
-                        Math.pow(this.player.y - (ghost.y + this.tileSize/2), 2)
+                        Math.pow(this.player.x - ghost.x, 2) +
+                        Math.pow(this.player.y - ghost.y, 2)
                     );
 
-                    if (distance < this.tileSize) {
+                    // Adjusted collision radius for more precise detection
+                    const collisionRadius = this.tileSize * 0.8;
+
+                    if (distance < collisionRadius) {
                         if (ghost.isVulnerable) {
                             console.log('Vulnerable ghost eaten');
                             this.eatGhost(ghost);
