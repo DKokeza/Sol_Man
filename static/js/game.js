@@ -39,21 +39,26 @@ class Game {
             this.maze = new Maze(20, 20, this.tileSize);
             this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
 
-            // Create ghosts with increasing speed based on level
-            const baseSpeed = 1 + (this.level - 1) * 0.2; // Speed increases by 20% each level
-            this.ghosts = [
-                new Ghost(9, 9, this.tileSize, 'red', baseSpeed),
-                new Ghost(10, 9, this.tileSize, 'pink', baseSpeed),
-                new Ghost(11, 9, this.tileSize, 'cyan', baseSpeed),
-                new Ghost(10, 8, this.tileSize, 'orange', baseSpeed)
+            // Create ghosts with different initial positions and speeds
+            const ghostConfigs = [
+                { color: 'red', x: 9, y: 9, speed: 1 },
+                { color: 'pink', x: 10, y: 9, speed: 0.95 },
+                { color: 'cyan', x: 11, y: 9, speed: 0.9 },
+                { color: 'orange', x: 10, y: 8, speed: 0.85 }
             ];
+
+            this.ghosts = ghostConfigs.map(config => {
+                const ghost = new Ghost(config.x, config.y, this.tileSize, config.color, config.speed);
+                console.log(`Created ${config.color} ghost at (${config.x}, ${config.y}) with speed ${config.speed}`);
+                return ghost;
+            });
 
             // Update display
             document.getElementById('level').textContent = this.level;
             console.log('Level initialization complete');
         } catch (error) {
             console.error('Error initializing level:', error);
-            this.handleGameError();
+            this.handleGameError(error);
         }
     }
 
