@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOL-Man Game</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
 </head>
 <body>
     <div class="game-container">
         <h1 class="game-title">SOL-Man</h1>
+        <div class="wallet-section">
+            <button id="connectWallet" class="wallet-button">Connect Phantom Wallet</button>
+            <span id="walletInfo" class="wallet-info">Not connected</span>
+        </div>
         <div class="score-board">
             <span>Level: <span id="level">1</span></span>
             <span>Score: <span id="score">0</span></span>
@@ -31,6 +36,7 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/audio.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/wallet.js') }}"></script>
     <script src="{{ url_for('static', filename='js/maze.js') }}"></script>
     <script src="{{ url_for('static', filename='js/player.js') }}"></script>
     <script src="{{ url_for('static', filename='js/ghost.js') }}"></script>
