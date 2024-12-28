@@ -12,176 +12,195 @@ class Ghost {
         this.lastDirection = null;
         this.targetTile = null;
         this.pathUpdateTimer = 0;
-        this.momentum = 0.8; // Add momentum for smoother movement
+        this.momentum = 0.8;
 
-        // Personality based on color
-        switch (color) {
-            case 'red': // Direct chaser
-                this.personalityOffset = { x: 0, y: 0 };
-                this.randomness = 0.1;
-                break;
-            case 'pink': // Tries to cut off the player
-                this.personalityOffset = { x: 4, y: 4 };
-                this.randomness = 0.2;
-                break;
-            case 'cyan': // Random movement with slight chase tendency
-                this.personalityOffset = { x: -4, y: -4 };
-                this.randomness = 0.4;
-                break;
-            case 'orange': // Stays in general area unless player is close
-                this.personalityOffset = { x: -2, y: 2 };
-                this.randomness = 0.3;
-                break;
-        }
+        // Personality traits based on color
+        const personalities = {
+            red: { offset: { x: 0, y: 0 }, randomness: 0.1, speed: 1 },      // Direct chaser
+            pink: { offset: { x: 4, y: -4 }, randomness: 0.2, speed: 0.9 },  // Predictor
+            cyan: { offset: { x: -4, y: 4 }, randomness: 0.3, speed: 0.95 }, // Ambusher
+            orange: { offset: { x: 8, y: 8 }, randomness: 0.4, speed: 0.85 } // Random wanderer
+        };
 
-        console.log(`Ghost initialized: Color=${color}, Position=(${x},${y}), Speed=${speed}`);
+        const personality = personalities[color] || personalities.red;
+        this.personalityOffset = personality.offset;
+        this.randomness = personality.randomness;
+        this.baseSpeed = personality.speed * speed;
+
+        console.log(`Ghost initialized: Color=${color}, Position=(${x},${y}), Speed=${this.baseSpeed}`);
     }
 
     update(playerPos, maze) {
-        const currentTile = this.getGridPosition();
+        try {
+            const currentTile = this.getGridPosition();
 
-        // Update path less frequently to reduce erratic movement
-        this.pathUpdateTimer++;
-        if (this.pathUpdateTimer >= 30) { // Update path every 30 frames
-            this.pathUpdateTimer = 0;
-            this.updateTargetTile(playerPos, maze);
-        }
+            // Update path less frequently
+            this.pathUpdateTimer++;
+            if (this.pathUpdateTimer >= 30) {
+                this.pathUpdateTimer = 0;
+                this.updateTargetTile(playerPos);
+            }
 
-        // Check if ghost is stuck
-        const currentPosition = { x: this.x, y: this.y };
-        if (Math.abs(currentPosition.x - this.lastPosition.x) < 0.1 &&
-            Math.abs(currentPosition.y - this.lastPosition.y) < 0.1) {
-            this.stuckTimer++;
-            if (this.stuckTimer > 15) { // Reduced timer for quicker response
-                this.handleStuckState(maze, currentTile);
+            // Stuck detection with improved accuracy
+            const currentPosition = { x: this.x, y: this.y };
+            const isStuck = Math.abs(currentPosition.x - this.lastPosition.x) < 0.1 &&
+                           Math.abs(currentPosition.y - this.lastPosition.y) < 0.1;
+
+            if (isStuck) {
+                this.stuckTimer++;
+                if (this.stuckTimer > 15) {
+                    this.handleStuckState(maze, currentTile);
+                    this.stuckTimer = 0;
+                }
+            } else {
                 this.stuckTimer = 0;
             }
-        } else {
-            this.stuckTimer = 0;
-        }
 
-        this.lastPosition = { ...currentPosition };
+            this.lastPosition = { ...currentPosition };
 
-        // Movement logic based on target tile
-        if (this.targetTile) {
-            const moveDirection = this.getMoveDirectionToTarget(currentTile, maze);
-            if (moveDirection) {
-                // Apply momentum for smoother direction changes
-                this.direction.x = this.direction.x * this.momentum + moveDirection.x * (1 - this.momentum);
-                this.direction.y = this.direction.y * this.momentum + moveDirection.y * (1 - this.momentum);
+            // Apply movement with momentum
+            if (this.targetTile) {
+                const moveDirection = this.getMoveDirectionToTarget(currentTile, maze);
+                if (moveDirection) {
+                    // Smooth direction changes
+                    this.direction.x = this.direction.x * this.momentum + moveDirection.x * (1 - this.momentum);
+                    this.direction.y = this.direction.y * this.momentum + moveDirection.y * (1 - this.momentum);
+                }
             }
-        }
 
-        // Apply movement with improved collision detection and wall sliding
-        const nextX = this.x + this.direction.x * this.speed;
-        const nextY = this.y + this.direction.y * this.speed;
-        const nextTile = this.getTileFromPosition(nextX, nextY);
+            // Movement and collision handling
+            const nextX = this.x + this.direction.x * this.baseSpeed;
+            const nextY = this.y + this.direction.y * this.baseSpeed;
+            const nextTile = this.getTileFromPosition(nextX, nextY);
 
-        if (!this.isCollision(maze, nextTile)) {
-            this.x = nextX;
-            this.y = nextY;
-            this.lastDirection = { ...this.direction };
-        } else {
-            // Try to slide along walls
-            if (!this.isCollision(maze, { x: currentTile.x + Math.sign(this.direction.x), y: currentTile.y })) {
-                this.y = currentTile.y * this.tileSize + this.tileSize / 2;
-                this.x += this.direction.x * this.speed;
-            } else if (!this.isCollision(maze, { x: currentTile.x, y: currentTile.y + Math.sign(this.direction.y) })) {
-                this.x = currentTile.x * this.tileSize + this.tileSize / 2;
-                this.y += this.direction.y * this.speed;
+            if (!this.isCollision(maze, nextTile)) {
+                this.x = nextX;
+                this.y = nextY;
+                this.lastDirection = { ...this.direction };
             } else {
                 this.handleCollision(maze, currentTile);
             }
+
+        } catch (error) {
+            console.error(`Ghost ${this.color} update error:`, error);
+            // Reset to safe state
+            this.direction = { x: 0, y: 0 };
         }
     }
 
-    updateTargetTile(playerPos, maze) {
-        const playerTile = {
-            x: Math.floor(playerPos.x / this.tileSize),
-            y: Math.floor(playerPos.y / this.tileSize)
-        };
-
-        // Add personality-based offset and randomness
-        const targetOffset = {
-            x: this.personalityOffset.x + (Math.random() * 2 - 1) * this.randomness * 10,
-            y: this.personalityOffset.y + (Math.random() * 2 - 1) * this.randomness * 10
-        };
-
-        this.targetTile = {
-            x: playerTile.x + targetOffset.x,
-            y: playerTile.y + targetOffset.y
-        };
-
-        // Ensure target is within maze bounds
-        this.targetTile.x = Math.max(0, Math.min(19, this.targetTile.x));
-        this.targetTile.y = Math.max(0, Math.min(19, this.targetTile.y));
-    }
-
-    getMoveDirectionToTarget(currentTile, maze) {
-        if (!this.targetTile) return null;
-
-        const possibleMoves = this.getPossibleMoves(maze, currentTile);
-        if (possibleMoves.length === 0) return null;
-
-        let bestMove = null;
-        let bestScore = Infinity;
-
-        for (const move of possibleMoves) {
-            const newTile = {
-                x: currentTile.x + move.x,
-                y: currentTile.y + move.y
+    updateTargetTile(playerPos) {
+        try {
+            const playerTile = {
+                x: Math.floor(playerPos.x / this.tileSize),
+                y: Math.floor(playerPos.y / this.tileSize)
             };
 
-            // Calculate distance to target
-            const distance = Math.sqrt(
-                Math.pow(newTile.x - this.targetTile.x, 2) +
-                Math.pow(newTile.y - this.targetTile.y, 2)
-            );
+            // Add personality influence
+            const targetOffset = {
+                x: this.personalityOffset.x + (Math.random() * 2 - 1) * this.randomness * 5,
+                y: this.personalityOffset.y + (Math.random() * 2 - 1) * this.randomness * 5
+            };
 
-            // Add personality-based randomness
-            const score = distance * (1 + Math.random() * this.randomness);
-
-            if (score < bestScore) {
-                bestScore = score;
-                bestMove = move;
-            }
+            this.targetTile = {
+                x: Math.max(0, Math.min(19, playerTile.x + targetOffset.x)),
+                y: Math.max(0, Math.min(19, playerTile.y + targetOffset.y))
+            };
+        } catch (error) {
+            console.error(`Ghost ${this.color} target update error:`, error);
+            // Keep current target if update fails
         }
-
-        return bestMove;
     }
 
     handleStuckState(maze, currentTile) {
-        // Reset momentum temporarily for better responsiveness
-        this.momentum = 0.2;
+        try {
+            // Temporarily reduce momentum for better responsiveness
+            this.momentum = 0.3;
 
-        // Find new direction excluding current direction
-        const possibleMoves = this.getPossibleMoves(maze, currentTile)
-            .filter(move => move.x !== this.direction.x || move.y !== this.direction.y);
+            // Get valid moves excluding current direction
+            const possibleMoves = this.getPossibleMoves(maze, currentTile)
+                .filter(move => !(move.x === this.direction.x && move.y === this.direction.y));
 
-        if (possibleMoves.length > 0) {
-            const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-            this.direction = randomMove;
-            this.targetTile = null; // Force path recalculation
+            if (possibleMoves.length > 0) {
+                const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                this.direction = randomMove;
+                this.targetTile = null; // Force path recalculation
+            }
+
+            // Restore momentum gradually
+            setTimeout(() => {
+                this.momentum = 0.8;
+            }, 300);
+
+        } catch (error) {
+            console.error(`Ghost ${this.color} stuck handling error:`, error);
+            this.direction = { x: 0, y: 0 };
         }
-
-        // Restore momentum gradually
-        setTimeout(() => {
-            this.momentum = 0.8;
-        }, 500);
     }
 
     handleCollision(maze, currentTile) {
-        const possibleMoves = this.getPossibleMoves(maze, currentTile);
-        if (possibleMoves.length > 0) {
-            // Prefer moves that aren't opposite to current direction
-            const preferredMoves = possibleMoves.filter(move =>
-                !(move.x === -this.direction.x && move.y === -this.direction.y)
-            );
+        try {
+            // Try sliding along walls first
+            if (!maze.isWall(currentTile.x + Math.sign(this.direction.x), currentTile.y)) {
+                this.y = currentTile.y * this.tileSize + this.tileSize / 2;
+                this.x += this.direction.x * this.baseSpeed;
+                return;
+            }
+            if (!maze.isWall(currentTile.x, currentTile.y + Math.sign(this.direction.y))) {
+                this.x = currentTile.x * this.tileSize + this.tileSize / 2;
+                this.y += this.direction.y * this.baseSpeed;
+                return;
+            }
 
-            const movesToUse = preferredMoves.length > 0 ? preferredMoves : possibleMoves;
-            this.direction = movesToUse[Math.floor(Math.random() * movesToUse.length)];
-        } else {
+            // If sliding fails, find new direction
+            const possibleMoves = this.getPossibleMoves(maze, currentTile);
+            if (possibleMoves.length > 0) {
+                const validMoves = possibleMoves.filter(move =>
+                    !(move.x === -this.direction.x && move.y === -this.direction.y)
+                );
+                const movesToUse = validMoves.length > 0 ? validMoves : possibleMoves;
+                this.direction = movesToUse[Math.floor(Math.random() * movesToUse.length)];
+            } else {
+                this.direction = { x: 0, y: 0 };
+            }
+        } catch (error) {
+            console.error(`Ghost ${this.color} collision handling error:`, error);
             this.direction = { x: 0, y: 0 };
+        }
+    }
+
+    getMoveDirectionToTarget(currentTile, maze) {
+        try {
+            if (!this.targetTile) return null;
+
+            const possibleMoves = this.getPossibleMoves(maze, currentTile);
+            if (possibleMoves.length === 0) return null;
+
+            let bestMove = null;
+            let bestScore = Infinity;
+
+            for (const move of possibleMoves) {
+                const newTile = {
+                    x: currentTile.x + move.x,
+                    y: currentTile.y + move.y
+                };
+
+                const distance = Math.sqrt(
+                    Math.pow(newTile.x - this.targetTile.x, 2) +
+                    Math.pow(newTile.y - this.targetTile.y, 2)
+                );
+
+                const score = distance * (1 + Math.random() * this.randomness);
+
+                if (score < bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            }
+
+            return bestMove;
+        } catch (error) {
+            console.error(`Ghost ${this.color} movement calculation error:`, error);
+            return null;
         }
     }
 
@@ -216,41 +235,45 @@ class Ghost {
     }
 
     draw(ctx) {
-        ctx.fillStyle = this.color;
+        try {
+            ctx.fillStyle = this.color;
 
-        // Ghost body
-        ctx.beginPath();
-        ctx.arc(
-            this.x + this.tileSize / 2,
-            this.y + this.tileSize / 2,
-            this.tileSize / 2,
-            Math.PI,
-            0
-        );
+            // Ghost body
+            ctx.beginPath();
+            ctx.arc(
+                this.x + this.tileSize / 2,
+                this.y + this.tileSize / 2,
+                this.tileSize / 2,
+                Math.PI,
+                0
+            );
 
-        // Ghost skirt
-        ctx.lineTo(this.x + this.tileSize, this.y + this.tileSize);
-        ctx.lineTo(this.x, this.y + this.tileSize);
-        ctx.closePath();
-        ctx.fill();
+            // Ghost skirt
+            ctx.lineTo(this.x + this.tileSize, this.y + this.tileSize);
+            ctx.lineTo(this.x, this.y + this.tileSize);
+            ctx.closePath();
+            ctx.fill();
 
-        // Eyes
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(
-            this.x + this.tileSize / 3,
-            this.y + this.tileSize / 2,
-            3,
-            0,
-            Math.PI * 2
-        );
-        ctx.arc(
-            this.x + (this.tileSize * 2 / 3),
-            this.y + this.tileSize / 2,
-            3,
-            0,
-            Math.PI * 2
-        );
-        ctx.fill();
+            // Eyes
+            ctx.fillStyle = 'white';
+            ctx.beginPath();
+            ctx.arc(
+                this.x + this.tileSize / 3,
+                this.y + this.tileSize / 2,
+                3,
+                0,
+                Math.PI * 2
+            );
+            ctx.arc(
+                this.x + (this.tileSize * 2 / 3),
+                this.y + this.tileSize / 2,
+                3,
+                0,
+                Math.PI * 2
+            );
+            ctx.fill();
+        } catch (error) {
+            console.error(`Ghost ${this.color} drawing error:`, error);
+        }
     }
 }
