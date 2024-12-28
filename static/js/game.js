@@ -131,6 +131,9 @@ class Game {
     update() {
         if (!this.gameActive) return;
 
+        // Try to change direction if there's a pending direction change
+        this.player.tryChangeDirection(this.maze);
+
         const nextPos = {
             x: this.player.x + this.player.direction.x * this.player.speed,
             y: this.player.y + this.player.direction.y * this.player.speed
