@@ -12,7 +12,17 @@ body {
 .game-container {
     position: relative;
     display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 20px;
+}
+
+.game-title {
+    color: #14F195;
+    font-size: 48px;
+    margin: 0;
+    text-shadow: 0 0 10px rgba(20, 241, 149, 0.5);
+    letter-spacing: 2px;
 }
 
 .score-board {
@@ -21,17 +31,18 @@ body {
     margin-bottom: 20px;
     display: flex;
     justify-content: space-between;
+    gap: 20px;
 }
 
 #gameCanvas {
-    border: 2px solid #00f;
+    border: 2px solid #14F195;
     background: #000;
 }
 
 .leaderboard {
     background: rgba(0, 0, 0, 0.8);
     padding: 20px;
-    border: 2px solid #00f;
+    border: 2px solid #14F195;
     color: white;
     min-width: 200px;
 }
@@ -39,6 +50,7 @@ body {
 .leaderboard h2 {
     text-align: center;
     margin-top: 0;
+    color: #14F195;
 }
 
 .score-entry {
@@ -63,6 +75,7 @@ body {
     padding: 20px;
     text-align: center;
     border-radius: 10px;
+    border: 2px solid #14F195;
     z-index: 1000;
 }
 
@@ -75,13 +88,13 @@ input {
     margin: 10px 0;
     width: 200px;
     background: #333;
-    border: 1px solid #666;
+    border: 1px solid #14F195;
     color: white;
     font-size: 16px;
 }
 
 button {
-    background: #ff0;
+    background: #14F195;
     border: none;
     padding: 10px 20px;
     font-size: 18px;
@@ -89,10 +102,11 @@ button {
     margin-top: 20px;
     display: block;
     width: 100%;
+    color: #000;
 }
 
 button:hover {
-    background: #ffd700;
+    background: #0fd584;
 }
 
 .error {

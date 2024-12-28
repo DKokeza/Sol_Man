@@ -5,7 +5,7 @@ class Maze {
         this.tileSize = tileSize;
         this.grid = [];
         this.dots = [];
-        this.bitcoins = []; // New array for Bitcoin coins
+        this.bitcoins = []; 
         this.generateMaze();
     }
 
@@ -42,7 +42,7 @@ class Maze {
                     this.dots.push({ x, y });
                 } else if (this.grid[y][x] === 'B') {
                     this.bitcoins.push({ x, y });
-                    this.grid[y][x] = '.'; // Make the space walkable
+                    this.grid[y][x] = '.'; 
                 }
             }
         }
@@ -78,10 +78,10 @@ class Maze {
             ctx.fill();
         }
 
-        // Draw Bitcoin coins
+        // Draw Solana coins
         for (const bitcoin of this.bitcoins) {
-            // Draw larger golden circle
-            ctx.fillStyle = '#F7931A';
+            // Draw larger circle with Solana's color
+            ctx.fillStyle = '#14F195';
             ctx.beginPath();
             ctx.arc(
                 bitcoin.x * this.tileSize + this.tileSize / 2,
@@ -92,13 +92,13 @@ class Maze {
             );
             ctx.fill();
 
-            // Draw "₿" symbol
+            // Draw "SOL" text
             ctx.fillStyle = '#ffffff';
-            ctx.font = `${this.tileSize/2}px Arial`;
+            ctx.font = `${this.tileSize/3}px Arial`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(
-                '₿',
+                'SOL',
                 bitcoin.x * this.tileSize + this.tileSize / 2,
                 bitcoin.y * this.tileSize + this.tileSize / 2
             );
