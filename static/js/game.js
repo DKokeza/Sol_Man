@@ -10,7 +10,8 @@ class Game {
         this.score = 0;
         this.lives = 3;
         this.isInvulnerable = false;
-        this.invulnerabilityDuration = 2000; // 2 seconds
+        this.invulnerabilityDuration = 2000; 
+        this.bitcoinPoints = 50; // Points for collecting a Bitcoin
 
         this.maze = new Maze(20, 20, this.tileSize);
         this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
@@ -28,7 +29,6 @@ class Game {
 
     bindControls() {
         document.addEventListener('keydown', (e) => {
-            // Initialize audio context on first user interaction
             if (this.audioManager) {
                 this.audioManager.initAudioContext();
             }
@@ -65,7 +65,6 @@ class Game {
             this.player.update();
         }
 
-        // Check for dot collection
         if (this.maze.removeDot(gridPos.x, gridPos.y)) {
             this.score += 10;
             if (this.audioManager) {
@@ -74,7 +73,15 @@ class Game {
             document.getElementById('score').textContent = this.score;
         }
 
-        // Update ghosts and check collisions
+        if (this.maze.removeBitcoin(gridPos.x, gridPos.y)) {
+            this.score += this.bitcoinPoints;
+            if (this.audioManager) {
+                this.audioManager.play('chomp');
+                setTimeout(() => this.audioManager.play('chomp'), 100);
+            }
+            document.getElementById('score').textContent = this.score;
+        }
+
         if (!this.isInvulnerable) {
             for (const ghost of this.ghosts) {
                 ghost.update(gridPos, this.maze);
@@ -86,12 +93,11 @@ class Game {
 
                 if (distance < this.tileSize) {
                     this.handleCollision();
-                    break; // Exit loop after first collision
+                    break; 
                 }
             }
         }
 
-        // Check win condition
         if (this.maze.dots.length === 0) {
             this.gameOver(true);
         }
@@ -109,7 +115,6 @@ class Game {
             this.gameOver();
         } else {
             this.resetPositions();
-            // Set invulnerability
             this.isInvulnerable = true;
             setTimeout(() => {
                 this.isInvulnerable = false;
@@ -121,7 +126,6 @@ class Game {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.maze.draw(this.ctx);
 
-        // Make player blink during invulnerability
         if (!this.isInvulnerable || Math.floor(Date.now() / 200) % 2) {
             this.player.draw(this.ctx);
         }
@@ -138,10 +142,7 @@ class Game {
     }
 
     resetPositions() {
-        // Stop player movement
         this.player.setDirection({ x: 0, y: 0 });
-
-        // Reset positions
         this.player.x = 10 * this.tileSize;
         this.player.y = 15 * this.tileSize;
 
@@ -157,7 +158,6 @@ class Game {
     }
 }
 
-// Start the game when the page loads
 window.addEventListener('load', () => {
     new Game();
 });
