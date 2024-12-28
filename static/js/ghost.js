@@ -6,68 +6,62 @@ class Ghost {
         this.color = color;
         this.speed = speed;
         this.direction = { x: 0, y: 0 };
-        this.lastDirectionChange = 0;
-        this.minDirectionChangeInterval = 30;
-        this.lastPosition = { x: this.x, y: this.y };
+        this.movementTimer = 0;
 
-        // Initialize with a random direction
+        // Debug info
+        console.log(`Ghost ${color} created at position (${x}, ${y})`);
         this.randomizeDirection();
-        console.log(`Ghost ${color} initialized at (${x},${y}) with speed ${speed}`);
     }
 
     update(playerPos, maze) {
         try {
-            // Check if ghost is stuck
-            const currentPosition = { x: this.x, y: this.y };
-            const isStuck = Math.abs(currentPosition.x - this.lastPosition.x) < 0.1 &&
-                           Math.abs(currentPosition.y - this.lastPosition.y) < 0.1;
+            this.movementTimer++;
 
-            if (isStuck || Math.random() < 0.02) { // Change direction if stuck or randomly
-                const availableDirections = this.getAvailableDirections(maze);
-                if (availableDirections.length > 0) {
-                    const newDirection = availableDirections[Math.floor(Math.random() * availableDirections.length)];
-                    this.direction = newDirection;
-                    console.log(`Ghost ${this.color} changed direction to (${this.direction.x},${this.direction.y})`);
-                }
+            // Change direction periodically or when hitting a wall
+            if (this.movementTimer >= 60 || this.isWallAhead(maze)) {
+                this.randomizeDirection();
+                this.movementTimer = 0;
+                console.log(`Ghost ${this.color} changing direction to (${this.direction.x}, ${this.direction.y})`);
             }
 
-            // Try to move in current direction
+            // Calculate next position
             const nextX = this.x + this.direction.x * this.speed;
             const nextY = this.y + this.direction.y * this.speed;
-            const nextTile = this.getTileFromPosition(nextX, nextY);
 
+            // Validate move
+            const nextTile = this.getTileFromPosition(nextX, nextY);
             if (!this.isCollision(maze, nextTile)) {
+                // Store previous position for logging
+                const prevX = Math.floor(this.x / this.tileSize);
+                const prevY = Math.floor(this.y / this.tileSize);
+
+                // Update position
                 this.x = nextX;
                 this.y = nextY;
-                console.log(`Ghost ${this.color} moved to (${Math.floor(this.x/this.tileSize)},${Math.floor(this.y/this.tileSize)})`);
+
+                const newX = Math.floor(this.x / this.tileSize);
+                const newY = Math.floor(this.y / this.tileSize);
+
+                // Log only when changing tiles
+                if (prevX !== newX || prevY !== newY) {
+                    console.log(`Ghost ${this.color} moved from (${prevX}, ${prevY}) to (${newX}, ${newY})`);
+                }
             } else {
+                console.log(`Ghost ${this.color} blocked by wall at (${Math.floor(nextX/this.tileSize)}, ${Math.floor(nextY/this.tileSize)})`);
                 this.randomizeDirection();
             }
-
-            this.lastPosition = currentPosition;
-
         } catch (error) {
             console.error(`Ghost ${this.color} update error:`, error);
+            // Recovery action
             this.randomizeDirection();
         }
     }
 
-    getAvailableDirections(maze) {
-        const directions = [
-            { x: 1, y: 0 },
-            { x: -1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 0, y: -1 }
-        ];
-
-        const currentTile = this.getGridPosition();
-        return directions.filter(dir => {
-            const testTile = {
-                x: currentTile.x + dir.x,
-                y: currentTile.y + dir.y
-            };
-            return !this.isCollision(maze, testTile);
-        });
+    isWallAhead(maze) {
+        const nextX = this.x + this.direction.x * this.speed * 2; // Look 2 steps ahead
+        const nextY = this.y + this.direction.y * this.speed * 2;
+        const nextTile = this.getTileFromPosition(nextX, nextY);
+        return this.isCollision(maze, nextTile);
     }
 
     randomizeDirection() {
@@ -77,8 +71,14 @@ class Ghost {
             { x: 0, y: 1 },
             { x: 0, y: -1 }
         ];
-        this.direction = directions[Math.floor(Math.random() * directions.length)];
-        console.log(`Ghost ${this.color} randomized direction to (${this.direction.x},${this.direction.y})`);
+
+        // Avoid choosing same direction
+        const currentDir = this.direction;
+        const newDirections = directions.filter(dir => 
+            !(dir.x === currentDir.x && dir.y === currentDir.y));
+
+        this.direction = newDirections[Math.floor(Math.random() * newDirections.length)];
+        console.log(`Ghost ${this.color} new direction: (${this.direction.x}, ${this.direction.y})`);
     }
 
     isCollision(maze, tile) {
@@ -86,14 +86,14 @@ class Ghost {
             return maze.isWall(Math.floor(tile.x), Math.floor(tile.y));
         } catch (error) {
             console.error(`Ghost ${this.color} collision check error:`, error);
-            return true;
+            return true; // Safer to assume collision
         }
     }
 
     getTileFromPosition(x, y) {
         return {
-            x: Math.floor(x / this.tileSize),
-            y: Math.floor(y / this.tileSize)
+            x: x / this.tileSize,
+            y: y / this.tileSize
         };
     }
 
@@ -137,7 +137,6 @@ class Ghost {
                 Math.PI * 2
             );
             ctx.fill();
-
         } catch (error) {
             console.error(`Ghost ${this.color} drawing error:`, error);
         }
