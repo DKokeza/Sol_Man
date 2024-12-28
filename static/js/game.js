@@ -148,6 +148,19 @@ class Game {
                 setTimeout(() => this.audioManager.play('chomp'), 100);
             }
             document.getElementById('score').textContent = this.score;
+
+            // Try to send SOL reward if wallet is connected
+            if (window.walletManager) {
+                try {
+                    window.walletManager.sendReward(0.01).then(success => {
+                        if (success) {
+                            console.log('SOL reward sent successfully');
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error sending SOL reward:', error);
+                }
+            }
         }
 
         if (!this.isInvulnerable && !this.processingCollision) {

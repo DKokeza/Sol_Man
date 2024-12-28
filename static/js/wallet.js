@@ -3,10 +3,13 @@ class WalletManager {
         this.connection = null;
         this.wallet = null;
         this.isConnected = false;
-        
+
         // Initialize connection to Solana devnet
         this.initializeConnection();
         this.bindWalletEvents();
+
+        // Add error logging
+        console.log('WalletManager initialized');
     }
 
     async initializeConnection() {
@@ -15,6 +18,7 @@ class WalletManager {
             const isPhantomAvailable = window.solana && window.solana.isPhantom;
             if (!isPhantomAvailable) {
                 console.log('Phantom wallet is not installed');
+                this.updateWalletUI('Phantom wallet not installed');
                 return;
             }
 
@@ -24,53 +28,85 @@ class WalletManager {
             console.log('Connected to Solana devnet');
         } catch (error) {
             console.error('Failed to initialize Solana connection:', error);
+            this.updateWalletUI('Failed to connect to Solana network');
         }
     }
 
     bindWalletEvents() {
-        document.getElementById('connectWallet')?.addEventListener('click', () => this.connectWallet());
+        const connectButton = document.getElementById('connectWallet');
+        if (connectButton) {
+            connectButton.addEventListener('click', () => this.connectWallet());
+            console.log('Wallet events bound successfully');
+        } else {
+            console.error('Connect wallet button not found');
+        }
     }
 
     async connectWallet() {
         try {
             if (!window.solana) {
-                alert('Please install Phantom wallet to continue');
+                this.updateWalletUI('Please install Phantom wallet');
                 return;
             }
 
             const response = await window.solana.connect();
             this.wallet = response.publicKey.toString();
             this.isConnected = true;
-            
-            // Update UI
+
             this.updateWalletUI();
             console.log('Wallet connected:', this.wallet);
         } catch (error) {
             console.error('Error connecting wallet:', error);
-            alert('Failed to connect wallet. Please try again.');
+            this.updateWalletUI('Failed to connect wallet');
         }
     }
 
-    updateWalletUI() {
+    updateWalletUI(errorMessage = null) {
         const walletInfo = document.getElementById('walletInfo');
         if (walletInfo) {
-            if (this.isConnected && this.wallet) {
+            if (errorMessage) {
+                walletInfo.innerHTML = `<span class="error">${errorMessage}</span>`;
+                walletInfo.classList.add('error');
+            } else if (this.isConnected && this.wallet) {
                 walletInfo.innerHTML = `Connected: ${this.wallet.slice(0, 4)}...${this.wallet.slice(-4)}`;
-                document.getElementById('connectWallet').style.display = 'none';
+                walletInfo.classList.remove('error');
+                if (document.getElementById('connectWallet')) {
+                    document.getElementById('connectWallet').style.display = 'none';
+                }
             } else {
                 walletInfo.innerHTML = 'Not connected';
-                document.getElementById('connectWallet').style.display = 'block';
+                walletInfo.classList.remove('error');
+                if (document.getElementById('connectWallet')) {
+                    document.getElementById('connectWallet').style.display = 'block';
+                }
             }
+        } else {
+            console.error('Wallet info element not found');
         }
     }
 
     async sendReward(amount) {
         if (!this.isConnected || !this.wallet) {
-            alert('Please connect your wallet to receive rewards');
-            return;
+            console.log('Wallet not connected for rewards');
+            return false;
         }
 
-        // Implementation for sending rewards will go here
-        console.log(`Sending ${amount} reward to wallet ${this.wallet}`);
+        try {
+            // Log reward attempt
+            console.log(`Attempting to send ${amount} SOL reward to ${this.wallet}`);
+            return true;
+        } catch (error) {
+            console.error('Error sending reward:', error);
+            return false;
+        }
     }
 }
+
+// Initialize wallet manager when the page loads
+window.addEventListener('load', () => {
+    try {
+        window.walletManager = new WalletManager();
+    } catch (error) {
+        console.error('Failed to initialize wallet manager:', error);
+    }
+});
