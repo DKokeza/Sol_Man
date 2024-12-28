@@ -19,10 +19,6 @@ class Game {
             new Ghost(10, 8, this.tileSize, 'orange')
         ];
 
-        this.audioManager = new AudioManager();
-        this.gameState = 'normal';
-        this.audioManager.playMusic('normal');
-
         this.bindControls();
         this.gameLoop();
     }
@@ -69,19 +65,14 @@ class Game {
             document.getElementById('score').textContent = this.score;
         }
 
-        // Update ghosts and check for state changes
-        let nearestGhostDistance = Infinity;
-
+        // Update ghosts and check collisions
         for (const ghost of this.ghosts) {
             ghost.update(gridPos, this.maze);
 
-            // Calculate distance to ghost
             const distance = Math.sqrt(
                 Math.pow(this.player.x - (ghost.x + this.tileSize/2), 2) +
                 Math.pow(this.player.y - (ghost.y + this.tileSize/2), 2)
             );
-
-            nearestGhostDistance = Math.min(nearestGhostDistance, distance);
 
             if (distance < this.tileSize) {
                 this.lives--;
@@ -96,13 +87,6 @@ class Game {
             }
         }
 
-        // Update game state and music based on ghost proximity
-        const newState = nearestGhostDistance < this.tileSize * 4 ? 'danger' : 'normal';
-        if (newState !== this.gameState) {
-            this.gameState = newState;
-            this.audioManager.playMusic(this.gameState);
-        }
-
         // Check win condition
         if (this.maze.dots.length === 0) {
             this.gameOver(true);
@@ -111,10 +95,8 @@ class Game {
 
     draw() {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
         this.maze.draw(this.ctx);
         this.player.draw(this.ctx);
-
         for (const ghost of this.ghosts) {
             ghost.draw(this.ctx);
         }
@@ -140,7 +122,6 @@ class Game {
     gameOver(won = false) {
         document.getElementById('gameOver').classList.remove('hidden');
         document.getElementById('finalScore').textContent = this.score;
-        this.audioManager.playMusic('normal'); // Reset music state
     }
 }
 
