@@ -20,7 +20,7 @@ class Ghost {
 
     makeVulnerable(duration) {
         this.isVulnerable = true;
-        this.color = '#9370DB'; // Changed to medium purple for better visibility
+        this.color = '#FF69B4'; // Changed to hot pink for better visibility
         this.speed = this.originalSpeed * 0.5;
 
         console.log(`Ghost ${this.originalColor} became vulnerable for ${duration}ms`);
@@ -83,7 +83,7 @@ class Ghost {
             if (this.isVulnerable) {
                 if (this.vulnerableTimer && 
                     this.vulnerableTimer._idleTimeout - (Date.now() - this.vulnerableTimer._idleStart) < 2000) {
-                    this.color = Math.floor(Date.now() / 250) % 2 === 0 ? '#9370DB' : '#ffffff';
+                    this.color = Math.floor(Date.now() / 250) % 2 === 0 ? '#FF69B4' : '#ffffff';
                 }
             }
 

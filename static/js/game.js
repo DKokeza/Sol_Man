@@ -177,7 +177,6 @@ class Game {
 
             if (!this.maze.isWall(gridPos.x, gridPos.y)) {
                 this.player.update();
-                console.log(`Player position updated: (${this.player.x}, ${this.player.y})`);
             }
 
             // Check for power pellet collection
@@ -200,8 +199,8 @@ class Game {
                         Math.pow(this.player.y - ghost.y, 2)
                     );
 
-                    // Adjusted collision radius for more precise detection
-                    const collisionRadius = this.tileSize * 0.8;
+                    // Reduced collision radius for more precise detection
+                    const collisionRadius = this.tileSize * 0.6;
 
                     if (distance < collisionRadius) {
                         console.log(`Collision detected! Distance: ${distance}, Radius: ${collisionRadius}`);
@@ -253,9 +252,12 @@ class Game {
 
     makeGhostsVulnerable() {
         const vulnerabilityDuration = 10000; // 10 seconds
+        console.log('Making all ghosts vulnerable for', vulnerabilityDuration, 'ms');
+
         for (const ghost of this.ghosts) {
             ghost.makeVulnerable(vulnerabilityDuration);
         }
+
         // Play power pellet sound
         if (this.audioManager) {
             this.audioManager.play('powerPellet');
@@ -263,6 +265,7 @@ class Game {
     }
 
     eatGhost(ghost) {
+        console.log(`Eating ghost at position (${ghost.x}, ${ghost.y})`);
         // Reset ghost position
         ghost.resetToLastValidPosition();
         ghost.resetVulnerability();
