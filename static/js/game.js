@@ -204,11 +204,16 @@ class Game {
                     const collisionRadius = this.tileSize * 0.8;
 
                     if (distance < collisionRadius) {
+                        console.log(`Collision detected! Distance: ${distance}, Radius: ${collisionRadius}`);
+                        console.log(`Ghost state - Vulnerable: ${ghost.isVulnerable}, Color: ${ghost.color}`);
+                        console.log(`Player position: (${this.player.x}, ${this.player.y})`);
+                        console.log(`Ghost position: (${ghost.x}, ${ghost.y})`);
+
                         if (ghost.isVulnerable) {
                             console.log('Vulnerable ghost eaten');
                             this.eatGhost(ghost);
                         } else if (!this.isInvulnerable) {
-                            console.log('Ghost collision detected');
+                            console.log('Ghost collision detected - player dies');
                             this.handleCollision();
                         }
                         break;

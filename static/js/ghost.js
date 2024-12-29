@@ -23,6 +23,8 @@ class Ghost {
         this.color = '#9370DB'; // Changed to medium purple for better visibility
         this.speed = this.originalSpeed * 0.5;
 
+        console.log(`Ghost ${this.originalColor} became vulnerable for ${duration}ms`);
+
         if (this.vulnerableTimer) {
             clearTimeout(this.vulnerableTimer);
         }
@@ -33,6 +35,7 @@ class Ghost {
     }
 
     resetVulnerability() {
+        console.log(`Ghost ${this.originalColor} vulnerability ended`);
         this.isVulnerable = false;
         this.color = this.originalColor;
         this.speed = this.originalSpeed;
@@ -145,6 +148,7 @@ class Ghost {
     }
 
     resetToLastValidPosition() {
+        console.log(`Ghost ${this.originalColor} resetting to last valid position`);
         // Ensure ghost is at grid center when resetting
         this.x = this.gridX * this.tileSize;
         this.y = this.gridY * this.tileSize;
