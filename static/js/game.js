@@ -39,12 +39,12 @@ class Game {
             this.maze = new Maze(20, 20, this.tileSize);
             this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
 
-            // Create ghosts with different initial positions and speeds
+            // Inside initializeLevel method, update ghost configurations
             const ghostConfigs = [
-                { color: 'red', x: 9, y: 9, speed: 1 },
-                { color: 'pink', x: 10, y: 9, speed: 0.95 },
-                { color: 'cyan', x: 11, y: 9, speed: 1.05 },
-                { color: 'orange', x: 10, y: 8, speed: 0.85 }
+                { color: 'red', x: 9, y: 10, speed: 1 },      // Center of spawn area
+                { color: 'pink', x: 10, y: 10, speed: 0.95 },  // Center right
+                { color: 'cyan', x: 8, y: 10, speed: 1.05 },   // Center left
+                { color: 'orange', x: 11, y: 10, speed: 0.85 } // Far right
             ];
 
             // Initialize ghosts with correct positions
