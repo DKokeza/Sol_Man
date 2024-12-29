@@ -37,14 +37,16 @@ class Game {
         try {
             console.log(`Initializing level ${this.level}`);
             this.maze = new Maze(20, 20, this.tileSize);
-            this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
 
-            // Update ghost configurations with better starting positions
+            // Update player starting position to an open area
+            this.player = new Player(10 * this.tileSize, 13 * this.tileSize, this.tileSize);
+
+            // Update ghost configurations with accessible starting positions
             const ghostConfigs = [
-                { color: 'red', x: 10, y: 10, speed: 2 },    // Center ghost
-                { color: 'pink', x: 9, y: 10, speed: 1.8 },  // Left ghost
-                { color: 'cyan', x: 11, y: 10, speed: 1.8 }, // Right ghost
-                { color: 'orange', x: 10, y: 11, speed: 1.6 }// Bottom ghost
+                { color: 'red', x: 10, y: 8, speed: 2 },     // Top ghost
+                { color: 'pink', x: 9, y: 10, speed: 1.8 },   // Left ghost
+                { color: 'cyan', x: 11, y: 10, speed: 1.8 },  // Right ghost
+                { color: 'orange', x: 10, y: 12, speed: 1.6 } // Bottom ghost
             ];
 
             // Initialize ghosts with improved positions
