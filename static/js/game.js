@@ -43,13 +43,17 @@ class Game {
             const ghostConfigs = [
                 { color: 'red', x: 9, y: 9, speed: 1 },
                 { color: 'pink', x: 10, y: 9, speed: 0.95 },
-                { color: 'cyan', x: 11, y: 9, speed: 1.05 }, //Increased cyan ghost speed
+                { color: 'cyan', x: 11, y: 9, speed: 1.05 },
                 { color: 'orange', x: 10, y: 8, speed: 0.85 }
             ];
 
+            // Initialize ghosts with correct positions
             this.ghosts = ghostConfigs.map(config => {
-                const ghost = new Ghost(config.x * this.tileSize, config.y * this.tileSize, this.tileSize, config.color, config.speed); //Adjusted ghost position
-                console.log(`Created ${config.color} ghost at (${config.x}, ${config.y}) with speed ${config.speed}`);
+                // Calculate center position for ghost
+                const x = config.x * this.tileSize;
+                const y = config.y * this.tileSize;
+                const ghost = new Ghost(x, y, this.tileSize, config.color, config.speed);
+                console.log(`Created ${config.color} ghost at position (${x}, ${y}) with speed ${config.speed}`);
                 return ghost;
             });
 

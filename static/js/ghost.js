@@ -1,9 +1,7 @@
 class Ghost {
     constructor(x, y, tileSize, color, speed) {
-        this.gridX = x;
-        this.gridY = y;
-        this.x = x * tileSize;
-        this.y = y * tileSize;
+        this.x = x;
+        this.y = y;
         this.tileSize = tileSize;
         this.originalColor = color;
         this.color = color;
@@ -12,12 +10,14 @@ class Ghost {
         this.direction = { x: 0, y: 0 };
         this.isVulnerable = false;
         this.vulnerableTimer = null;
-        this.mode = 'scatter'; // New: Add movement mode
+        this.mode = 'scatter';
         this.modeTimer = null;
+        this.gridX = Math.floor(x / tileSize);
+        this.gridY = Math.floor(y / tileSize);
 
         // Set initial direction based on ghost color/personality
         this.setInitialDirection();
-        console.log(`Ghost ${color} initialized at (${x}, ${y}) with speed ${speed}`);
+        console.log(`Ghost ${color} initialized at position (${x}, ${y}) with speed ${speed}`);
     }
 
     setInitialDirection() {
