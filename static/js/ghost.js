@@ -12,15 +12,35 @@ class Ghost {
         this.direction = { x: 0, y: 0 };
         this.isVulnerable = false;
         this.vulnerableTimer = null;
+        this.mode = 'scatter'; // New: Add movement mode
+        this.modeTimer = null;
 
-        // Initialize with random direction
-        this.randomizeDirection();
-        console.log(`Ghost ${color} initialized at (${x}, ${y})`);
+        // Set initial direction based on ghost color/personality
+        this.setInitialDirection();
+        console.log(`Ghost ${color} initialized at (${x}, ${y}) with speed ${speed}`);
+    }
+
+    setInitialDirection() {
+        // Each ghost gets a different initial direction based on their color
+        switch(this.originalColor) {
+            case 'red':
+                this.direction = { x: 1, y: 0 }; // Right
+                break;
+            case 'pink':
+                this.direction = { x: 0, y: -1 }; // Up
+                break;
+            case 'cyan':
+                this.direction = { x: -1, y: 0 }; // Left
+                break;
+            case 'orange':
+                this.direction = { x: 0, y: 1 }; // Down
+                break;
+        }
     }
 
     makeVulnerable(duration) {
         this.isVulnerable = true;
-        this.color = '#FF69B4'; // Changed to hot pink for better visibility
+        this.color = '#FF69B4'; // Hot pink for better visibility
         this.speed = this.originalSpeed * 0.5;
 
         console.log(`Ghost ${this.originalColor} became vulnerable for ${duration}ms`);
@@ -46,7 +66,7 @@ class Ghost {
     }
 
     update(playerPos, maze) {
-        // Move in current direction
+        // Calculate next position
         const nextX = this.x + (this.direction.x * this.speed);
         const nextY = this.y + (this.direction.y * this.speed);
 
@@ -54,10 +74,15 @@ class Ghost {
         const nextGridX = Math.floor(nextX / this.tileSize);
         const nextGridY = Math.floor(nextY / this.tileSize);
 
-        // Check if we hit a wall or reached a grid intersection
-        if (maze.isWall(nextGridX, nextGridY) || 
-            (this.isAtGridCenter() && Math.random() < 0.3)) {
-            this.randomizeDirection();
+        // Check if we hit a wall or at intersection
+        if (maze.isWall(nextGridX, nextGridY) || this.isAtIntersection(maze)) {
+            if (this.isVulnerable) {
+                // When vulnerable, try to move away from player
+                this.moveAwayFromPlayer(playerPos, maze);
+            } else {
+                // Normal movement - choose direction based on mode
+                this.chooseNewDirection(playerPos, maze);
+            }
             return;
         }
 
@@ -68,13 +93,76 @@ class Ghost {
         this.gridY = Math.floor(this.y / this.tileSize);
     }
 
-    isAtGridCenter() {
+    isAtIntersection(maze) {
         const centerX = this.gridX * this.tileSize + (this.tileSize / 2);
         const centerY = this.gridY * this.tileSize + (this.tileSize / 2);
         const tolerance = 2;
 
-        return Math.abs(this.x - centerX) < tolerance && 
-               Math.abs(this.y - centerY) < tolerance;
+        // Check if at center of tile
+        if (Math.abs(this.x - centerX) < tolerance && Math.abs(this.y - centerY) < tolerance) {
+            // Count available directions
+            let availableDirections = 0;
+            const directions = [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}];
+
+            for (const dir of directions) {
+                if (!maze.isWall(this.gridX + dir.x, this.gridY + dir.y)) {
+                    availableDirections++;
+                }
+            }
+
+            // It's an intersection if more than 2 directions available
+            return availableDirections > 2;
+        }
+        return false;
+    }
+
+    moveAwayFromPlayer(playerPos, maze) {
+        const directions = this.getValidDirections(maze);
+        let bestDirection = null;
+        let maxDistance = -1;
+
+        for (const dir of directions) {
+            const newX = this.gridX + dir.x;
+            const newY = this.gridY + dir.y;
+
+            const distance = Math.sqrt(
+                Math.pow(newX - playerPos.x, 2) + 
+                Math.pow(newY - playerPos.y, 2)
+            );
+
+            if (distance > maxDistance) {
+                maxDistance = distance;
+                bestDirection = dir;
+            }
+        }
+
+        if (bestDirection) {
+            this.direction = bestDirection;
+        } else {
+            this.randomizeDirection(maze);
+        }
+    }
+
+    chooseNewDirection(playerPos, maze) {
+        const directions = this.getValidDirections(maze);
+
+        // Don't choose the opposite of current direction if possible
+        const filteredDirections = directions.filter(dir => 
+            !(dir.x === -this.direction.x && dir.y === -this.direction.y)
+        );
+
+        if (filteredDirections.length > 0) {
+            this.direction = filteredDirections[Math.floor(Math.random() * filteredDirections.length)];
+        } else if (directions.length > 0) {
+            this.direction = directions[Math.floor(Math.random() * directions.length)];
+        }
+    }
+
+    getValidDirections(maze) {
+        const directions = [{x: 1, y: 0}, {x: -1, y: 0}, {x: 0, y: 1}, {x: 0, y: -1}];
+        return directions.filter(dir => 
+            !maze.isWall(this.gridX + dir.x, this.gridY + dir.y)
+        );
     }
 
     draw(ctx) {
@@ -127,24 +215,11 @@ class Ghost {
         }
     }
 
-    randomizeDirection() {
-        const directions = [
-            { x: 1, y: 0 },
-            { x: -1, y: 0 },
-            { x: 0, y: 1 },
-            { x: 0, y: -1 }
-        ];
-
-        // Don't pick the opposite of current direction if possible
-        let availableDirections = directions.filter(dir => 
-            !(dir.x === -this.direction.x && dir.y === -this.direction.y)
-        );
-
-        if (availableDirections.length === 0) {
-            availableDirections = directions;
+    randomizeDirection(maze) {
+        const directions = this.getValidDirections(maze);
+        if (directions.length > 0) {
+            this.direction = directions[Math.floor(Math.random() * directions.length)];
         }
-
-        this.direction = availableDirections[Math.floor(Math.random() * availableDirections.length)];
     }
 
     resetToLastValidPosition() {
@@ -152,6 +227,6 @@ class Ghost {
         // Ensure ghost is at grid center when resetting
         this.x = this.gridX * this.tileSize;
         this.y = this.gridY * this.tileSize;
-        this.randomizeDirection();
+        this.setInitialDirection();
     }
 }
