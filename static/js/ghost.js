@@ -65,10 +65,22 @@ class Ghost {
         }
     }
 
+    validatePosition(x, y, maze) {
+        return x >= 0 && x < maze.width * this.tileSize && 
+               y >= 0 && y < maze.height * this.tileSize;
+    }
+
     update(playerPos, maze) {
         // Calculate next position
         const nextX = this.x + (this.direction.x * this.speed);
         const nextY = this.y + (this.direction.y * this.speed);
+
+        // Validate next position before moving
+        if (!this.validatePosition(nextX, nextY, maze)) {
+            console.log(`Ghost ${this.originalColor} attempted invalid move to: (${nextX}, ${nextY})`);
+            this.resetToLastValidPosition();
+            return;
+        }
 
         // Calculate next grid position
         const nextGridX = Math.floor(nextX / this.tileSize);

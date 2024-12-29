@@ -6,7 +6,7 @@ class Maze {
         this.grid = [];
         this.dots = [];
         this.powerPellets = [];
-        this.bitcoins = []; 
+        this.bitcoins = [];
         this.generateMaze();
     }
 
@@ -123,10 +123,20 @@ class Maze {
     }
 
     isWall(x, y) {
+        // Add boundary checking
+        if (y < 0 || y >= this.grid.length || x < 0 || x >= this.grid[0].length) {
+            console.log(`Invalid grid access attempt: x=${x}, y=${y}`);
+            return true; // Treat out of bounds as walls
+        }
         return this.grid[y][x] === '#';
     }
 
     removeDot(x, y) {
+        // Add boundary checking
+        if (y < 0 || y >= this.grid.length || x < 0 || x >= this.grid[0].length) {
+            console.log(`Invalid dot removal attempt: x=${x}, y=${y}`);
+            return false;
+        }
         const index = this.dots.findIndex(dot => dot.x === x && dot.y === y);
         if (index !== -1) {
             this.dots.splice(index, 1);
@@ -136,6 +146,11 @@ class Maze {
     }
 
     removeBitcoin(x, y) {
+        // Add boundary checking
+        if (y < 0 || y >= this.grid.length || x < 0 || x >= this.grid[0].length) {
+            console.log(`Invalid bitcoin removal attempt: x=${x}, y=${y}`);
+            return false;
+        }
         const index = this.bitcoins.findIndex(coin => coin.x === x && coin.y === y);
         if (index !== -1) {
             this.bitcoins.splice(index, 1);
@@ -145,6 +160,11 @@ class Maze {
     }
 
     removePowerPellet(x, y) {
+        // Add boundary checking
+        if (y < 0 || y >= this.grid.length || x < 0 || x >= this.grid[0].length) {
+            console.log(`Invalid power pellet removal attempt: x=${x}, y=${y}`);
+            return false;
+        }
         const index = this.powerPellets.findIndex(pellet => pellet.x === x && pellet.y === y);
         if (index !== -1) {
             this.powerPellets.splice(index, 1);
