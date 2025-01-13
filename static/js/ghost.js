@@ -35,7 +35,6 @@ class Ghost {
 
         // Validate next position before moving
         if (!this.validatePosition(nextX, nextY, maze)) {
-            console.log(`Ghost ${this.originalColor} attempting new direction at: (${nextX}, ${nextY})`);
             this.chooseNewDirection(playerPos, maze);
             return;
         }
@@ -64,6 +63,7 @@ class Ghost {
             { x: 0, y: 1 }   // down
         ];
         this.direction = directions[Math.floor(Math.random() * directions.length)];
+        console.log(`Ghost ${this.originalColor} initialized with direction:`, this.direction);
     }
 
     makeVulnerable(duration) {
@@ -119,8 +119,11 @@ class Ghost {
             { x: 0, y: 1 }, { x: 0, y: -1 }
         ];
 
-        // Filter valid moves
-        const validDirections = directions.filter(dir =>
+        // Filter out the opposite direction to prevent immediate reversal
+        const oppositeX = -this.direction.x;
+        const oppositeY = -this.direction.y;
+        let validDirections = directions.filter(dir => 
+            !(dir.x === oppositeX && dir.y === oppositeY) &&
             this.validatePosition(
                 this.x + dir.x * this.tileSize,
                 this.y + dir.y * this.tileSize,
@@ -128,16 +131,26 @@ class Ghost {
             )
         );
 
+        if (validDirections.length === 0) {
+            // If no valid directions (except opposite), allow reverse
+            validDirections = directions.filter(dir =>
+                this.validatePosition(
+                    this.x + dir.x * this.tileSize,
+                    this.y + dir.y * this.tileSize,
+                    maze
+                )
+            );
+        }
+
         if (validDirections.length > 0) {
-            // Choose random valid direction
             this.direction = validDirections[
                 Math.floor(Math.random() * validDirections.length)
             ];
-            console.log(`Ghost ${this.originalColor} chose new direction: (${this.direction.x}, ${this.direction.y})`);
+            console.log(`Ghost ${this.originalColor} chose new direction:`, this.direction);
         } else {
-            // If no valid moves, stop
+            // If somehow still no valid moves, stop
             this.direction = { x: 0, y: 0 };
-            console.log(`Ghost ${this.originalColor} stopped due to no valid moves`);
+            console.log(`Ghost ${this.originalColor} stopped - no valid moves`);
         }
     }
 

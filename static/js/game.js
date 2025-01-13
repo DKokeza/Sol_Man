@@ -307,29 +307,40 @@ class Game {
                 console.log('Collision detected - resetting positions');
                 this.resetPositions();
                 this.isInvulnerable = true;
+
+                // Ensure game stays active and processing collision is cleared
                 setTimeout(() => {
                     this.isInvulnerable = false;
                     this.processingCollision = false;
+                    console.log('Reset complete, game continuing...');
                 }, this.invulnerabilityDuration);
             }
         } catch (error) {
             console.error('Error handling collision:', error);
             this.handleGameError(error);
+            this.processingCollision = false; // Ensure this is cleared even on error
         }
     }
 
     resetPositions() {
         try {
-            this.player.x = 10 * this.tileSize;
-            this.player.y = 15 * this.tileSize;
-            this.player.direction = { x: 0, y: 0 };
-            this.player.nextDirection = null;
+            // Reset player to starting position
+            this.player = new Player(2 * this.tileSize, 2 * this.tileSize, this.tileSize);
 
-            this.ghosts.forEach((ghost, index) => {
-                ghost.x = (9 + index) * this.tileSize;
-                ghost.y = 9 * this.tileSize;
-                ghost.direction = { x: 0, y: 0 };
-                ghost.targetTile = null;
+            // Reset all ghosts to their starting positions with fresh state
+            const ghostConfigs = [
+                { color: 'red', x: 10, y: 8, speed: 1.5 },
+                { color: 'pink', x: 8, y: 8, speed: 1.3 },
+                { color: 'cyan', x: 12, y: 8, speed: 1.3 },
+                { color: 'orange', x: 10, y: 9, speed: 1.2 }
+            ];
+
+            this.ghosts = ghostConfigs.map(config => {
+                const x = config.x * this.tileSize;
+                const y = config.y * this.tileSize;
+                const ghost = new Ghost(x, y, this.tileSize, config.color, config.speed);
+                ghost.setInitialDirection();
+                return ghost;
             });
 
             console.log('Positions reset successfully');
