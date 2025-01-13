@@ -36,17 +36,17 @@ class Game {
     initializeLevel() {
         try {
             console.log(`Initializing level ${this.level}`);
-            this.maze = new Maze(20, 20, this.tileSize);
+            this.maze = new Maze(20, 17, this.tileSize); // Adjusted height to match new maze
 
-            // Start player in a more open area
-            this.player = new Player(10 * this.tileSize, 15 * this.tileSize, this.tileSize);
+            // Start player in a clear area
+            this.player = new Player(2 * this.tileSize, 2 * this.tileSize, this.tileSize);
 
-            // Update ghost configurations with accessible starting positions
+            // Update ghost configurations with better starting positions
             const ghostConfigs = [
-                { color: 'red', x: 10, y: 7, speed: 2 },     // Top ghost
-                { color: 'pink', x: 8, y: 10, speed: 1.8 },   // Left ghost
-                { color: 'cyan', x: 12, y: 10, speed: 1.8 },  // Right ghost
-                { color: 'orange', x: 10, y: 13, speed: 1.6 } // Bottom ghost
+                { color: 'red', x: 10, y: 8, speed: 1.5 },    // Center ghost
+                { color: 'pink', x: 8, y: 8, speed: 1.3 },    // Left ghost
+                { color: 'cyan', x: 12, y: 8, speed: 1.3 },   // Right ghost
+                { color: 'orange', x: 10, y: 9, speed: 1.2 }  // Bottom ghost
             ];
 
             // Initialize ghosts with improved positions
@@ -54,7 +54,7 @@ class Game {
                 const x = config.x * this.tileSize;
                 const y = config.y * this.tileSize;
                 const ghost = new Ghost(x, y, this.tileSize, config.color, config.speed);
-                ghost.setInitialDirection(); // Ensure each ghost starts with a direction
+                ghost.setInitialDirection();
                 console.log(`Created ${config.color} ghost at position (${x}, ${y}) with speed ${config.speed}`);
                 return ghost;
             });
