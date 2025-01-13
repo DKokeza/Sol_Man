@@ -7,6 +7,37 @@ body {
     align-items: center;
     min-height: 100vh;
     font-family: Arial, sans-serif;
+    position: relative;
+    overflow: hidden;
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.92), rgba(0, 0, 0, 0.92)),
+        linear-gradient(90deg, rgba(20, 241, 149, 0.1) 1px, transparent 1px),
+        linear-gradient(rgba(20, 241, 149, 0.1) 1px, transparent 1px);
+    background-size: 100% 100%, 20px 20px, 20px 20px;
+    animation: backgroundScroll 50s linear infinite;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at 50% 50%, transparent 0%, rgba(0, 0, 0, 0.8) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+@keyframes backgroundScroll {
+    from { background-position: 0 0, 0 0, 0 0; }
+    to { background-position: 0 0, -20px -20px, -20px -20px; }
+}
+
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-20px); }
+    100% { transform: translateY(0px); }
 }
 
 .game-container {
@@ -16,6 +47,29 @@ body {
     align-items: center;
     gap: 20px;
     padding: 20px;
+    z-index: 2;
+}
+
+.game-container::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background: radial-gradient(
+        circle at center,
+        rgba(20, 241, 149, 0.1) 0%,
+        transparent 60%
+    );
+    animation: pulse 4s ease-in-out infinite;
+    z-index: -1;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.3; }
+    100% { transform: scale(1); opacity: 0.5; }
 }
 
 .game-title {
@@ -24,6 +78,27 @@ body {
     margin: 0;
     text-shadow: 0 0 10px rgba(20, 241, 149, 0.5);
     letter-spacing: 2px;
+    position: relative;
+}
+
+.game-title::before,
+.game-title::after {
+    content: '•';
+    position: absolute;
+    color: #14F195;
+    font-size: 24px;
+    animation: float 3s ease-in-out infinite;
+    opacity: 0.5;
+}
+
+.game-title::before {
+    left: -30px;
+    animation-delay: -1.5s;
+}
+
+.game-title::after {
+    right: -30px;
+    animation-delay: -0.75s;
 }
 
 .score-board {
